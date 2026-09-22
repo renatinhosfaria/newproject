@@ -27,19 +27,21 @@ test("proxy keeps a real CRM lead after restarting API and streams Agent events"
   const envFile = join(temp, ".env");
   const brokerEmail = "broker.compose@example.test";
   const brokerPassword = randomBytes(24).toString("hex");
+  const composeEnv = {
+    APP_PORT: String(port),
+    APP_ORIGIN: origin,
+    DB_OWNER_PASSWORD: randomBytes(24).toString("hex"),
+    DB_APP_PASSWORD: randomBytes(24).toString("hex"),
+    SEED_SUPERVISOR_EMAIL: "supervisor.compose@example.test",
+    SEED_SUPERVISOR_PASSWORD: randomBytes(24).toString("hex"),
+    SEED_BROKER_EMAIL: brokerEmail,
+    SEED_BROKER_PASSWORD: brokerPassword,
+  };
   await writeFile(
     envFile,
-    [
-      `APP_PORT=${port}`,
-      `APP_ORIGIN=${origin}`,
-      `DB_OWNER_PASSWORD=${randomBytes(24).toString("hex")}`,
-      `DB_APP_PASSWORD=${randomBytes(24).toString("hex")}`,
-      "SEED_SUPERVISOR_EMAIL=supervisor.compose@example.test",
-      `SEED_SUPERVISOR_PASSWORD=${randomBytes(24).toString("hex")}`,
-      `SEED_BROKER_EMAIL=${brokerEmail}`,
-      `SEED_BROKER_PASSWORD=${brokerPassword}`,
-      "",
-    ].join("\n"),
+    Object.entries(composeEnv)
+      .map(([key, value]) => `${key}=${value}`)
+      .join("\n") + "\n",
     { mode: 0o600 },
   );
   const composeArgs = [
@@ -52,7 +54,10 @@ test("proxy keeps a real CRM lead after restarting API and streams Agent events"
     composeFile,
   ];
   const compose = async (...args: string[]) =>
-    run("docker", [...composeArgs, ...args], { timeout: 8 * 60 * 1000 });
+    run("docker", [...composeArgs, ...args], {
+      timeout: 8 * 60 * 1000,
+      env: { ...process.env, ...composeEnv },
+    });
   try {
     await compose("up", "--build", "--wait", "-d");
     const ready = await fetch(`${origin}/api/health/ready`);
