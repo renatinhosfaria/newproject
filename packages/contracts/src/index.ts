@@ -74,6 +74,15 @@ export const LeadSchema = z.object({
   updated_at: DateTimeSchema,
 });
 export type Lead = z.infer<typeof LeadSchema>;
+export const LeadPageSchema = z.object({
+  items: z.array(LeadSchema),
+  page: z.object({
+    page: z.number().int().min(1),
+    page_size: z.number().int().min(1).max(100),
+    total: z.number().int().min(0),
+  }),
+});
+export type LeadPage = z.infer<typeof LeadPageSchema>;
 
 export const CreateLeadRequestSchema = z.object({
   name: LeadFieldsSchema.name,
@@ -114,6 +123,15 @@ export const ConversationSchema = z.object({
   updated_at: DateTimeSchema,
 });
 export type Conversation = z.infer<typeof ConversationSchema>;
+export const ConversationPageSchema = z.object({
+  items: z.array(ConversationSchema),
+  page: z.object({
+    page: z.number().int().min(1),
+    page_size: z.number().int().min(1).max(100),
+    total: z.number().int().min(0),
+  }),
+});
+export type ConversationPage = z.infer<typeof ConversationPageSchema>;
 
 export const CreateConversationRequestSchema = z.object({
   lead_id: UuidSchema,
@@ -146,6 +164,15 @@ export const MessageSchema = z.object({
   occurred_at: DateTimeSchema,
 });
 export type Message = z.infer<typeof MessageSchema>;
+export const MessagePageSchema = z.object({
+  items: z.array(MessageSchema),
+  page: z.object({
+    page: z.number().int().min(1),
+    page_size: z.number().int().min(1).max(100),
+    total: z.number().int().min(0),
+  }),
+});
+export type MessagePage = z.infer<typeof MessagePageSchema>;
 
 export const AgentSessionStatusSchema = z.enum([
   "active",

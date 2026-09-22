@@ -21,7 +21,9 @@ export interface TestHarness {
   app: NestFastifyApplication;
   http: TestHttpClient;
   logs: string[];
+  origin: string;
   seedAgain(): Promise<void>;
+  restartApp(): Promise<void>;
   close(): Promise<void>;
 }
 
@@ -57,7 +59,25 @@ export async function createHarness(
   const ownerPool = new pg.Pool({ connectionString: scopedUrl(ownerUrl) });
   const pool = new pg.Pool({ connectionString: scopedUrl(appUrl), max: 1 });
   let app: NestFastifyApplication | undefined;
+  let http: TestHttpClient | undefined;
   let closed = false;
+  const appConfig = {
+    nodeEnv: "test",
+    allowedOrigin: "http://localhost:3000",
+    ...config,
+    databaseUrl: scopedUrl(appUrl),
+  };
+  const createTestApp = async () =>
+    createApp(appConfig, {
+      clock,
+      logStream: {
+        write: (line) => {
+          logs.push(line);
+        },
+      },
+    });
+  const clock = new ManualClock();
+  const logs: string[] = [];
   const close = async () => {
     if (closed) return;
     closed = true;
@@ -84,36 +104,32 @@ export async function createHarness(
     await pool.query("select set_config('app.broker_id', $1, false)", [
       fixtures.brokerA.brokerId,
     ]);
-    const clock = new ManualClock();
-    const logs: string[] = [];
-    app = await createApp(
-      {
-        nodeEnv: "test",
-        allowedOrigin: "http://localhost:3000",
-        ...config,
-        databaseUrl: scopedUrl(appUrl),
-      },
-      {
-        clock,
-        logStream: {
-          write: (line) => {
-            logs.push(line);
-          },
-        },
-      },
-    );
+    app = await createTestApp();
+    http = new TestHttpClient(app);
     return {
       db: drizzle(pool, { schema }),
       pool,
       ownerPool,
       fixtures,
       clock,
-      app,
-      http: new TestHttpClient(app),
+      get app() {
+        if (!app) throw new Error("test app is closed");
+        return app;
+      },
+      get http() {
+        if (!http) throw new Error("test app is closed");
+        return http;
+      },
       logs,
+      origin: appConfig.allowedOrigin,
       seedAgain: async () => {
         await migrate(ownerPool, schemaName);
         await seed(ownerDb, credentials);
+      },
+      restartApp: async () => {
+        if (app) await app.close();
+        app = await createTestApp();
+        http = new TestHttpClient(app);
       },
       close,
     };

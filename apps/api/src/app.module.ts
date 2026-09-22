@@ -1,9 +1,8 @@
 import type { ApiConfig } from "./app.js";
 import type { Clock } from "./clock.js";
 import { Module } from "@nestjs/common";
-import { HealthController } from "./http/health.controller.js";
-import { AuthModule } from "./auth/auth.module.js";
-import { IdempotencyService } from "./idempotency/idempotency.service.js";
+import { CLOCK, HealthController } from "./http/health.controller.js";
+import { CrmModule } from "./crm/crm.module.js";
 import type { DynamicModule } from "@nestjs/common";
 
 @Module({
@@ -14,9 +13,9 @@ export class AppModule {
   static forRoot(config: ApiConfig, clock: Clock): DynamicModule {
     return {
       module: AppModule,
-      imports: [AuthModule.forRoot(config, clock)],
+      imports: [CrmModule.forRoot(config, clock)],
       controllers: [HealthController],
-      providers: [IdempotencyService],
+      providers: [{ provide: CLOCK, useValue: clock }],
     };
   }
 }
