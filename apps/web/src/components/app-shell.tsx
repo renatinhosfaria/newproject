@@ -57,6 +57,7 @@ export function AppShell({
   const [error, setError] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
   const menuButton = useRef<HTMLButtonElement>(null);
   const sidebar = useRef<HTMLElement>(null);
   const [attempt, setAttempt] = useState(0);
@@ -89,11 +90,19 @@ export function AppShell({
 
   async function logout() {
     setLeaving(true);
+    setLogoutError(null);
     try {
       await api("/api/auth/logout", { method: "POST" });
-    } catch {
-      // Session already gone or unreachable: the cookie is HttpOnly and
-      // cannot be cleared here, so the login screen is still the safe place.
+    } catch (cause) {
+      // 401: the session is already invalid, so leaving is truthful.
+      // Anything else: the HttpOnly cookie may still be valid; say so.
+      if (!isUnauthorized(cause)) {
+        setLeaving(false);
+        setLogoutError(
+          `Não foi possível encerrar a sessão. ${describeError(cause)}`,
+        );
+        return;
+      }
     }
     router.replace("/login");
   }
@@ -212,7 +221,17 @@ export function AppShell({
               </Button>
             </div>
           </header>
-          <main className={styles.content}>{children(user)}</main>
+          <main className={styles.content}>
+            {logoutError ? (
+              <div className={styles.logoutError}>
+                <Alert>
+                  {logoutError} Use “Sair” para tentar de novo antes de deixar
+                  este dispositivo.
+                </Alert>
+              </div>
+            ) : null}
+            {children(user)}
+          </main>
         </div>
       </div>
     </SessionContext.Provider>

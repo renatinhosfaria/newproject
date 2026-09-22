@@ -53,6 +53,14 @@ Os valores abaixo são os tokens adotados no protótipo aprovado. Alterações d
 | `ink` | `#003D4C` | Texto principal |
 | `muted` | `#718097` | Texto auxiliar |
 
+Tokens derivados, definidos em `apps/web/src/styles/tokens.css` a partir da paleta acima:
+
+| Token | Valor | Uso principal |
+|---|---|---|
+| `control-border` | `muted` | Borda de campos e estados vazios; `line` não atinge o contraste 3:1 exigido para limites de controles |
+| `yellow-strong` | `#B98100` | Borda de status em amarelo (rascunho) com contraste ~3,4:1 sobre `card` |
+| `text-small` | `ink` | Texto auxiliar pequeno, porque `muted` fica abaixo de 4,5:1 |
+
 Regras de cor:
 
 - o vermelho é a cor principal dos menus e das ações primárias;

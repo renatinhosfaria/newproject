@@ -58,6 +58,14 @@ async function command(name: string, args: string[]): Promise<unknown> {
     case "release":
       h.releaseAgent();
       return true;
+    case "disable-agent":
+    case "enable-agent":
+      // Workspace policy change while a run is active (owner fixture access).
+      await h.ownerPool.query(
+        "UPDATE workspace_agents SET enabled = $1 WHERE agent_id = (SELECT id FROM agents WHERE key = 'atendimento')",
+        [name === "enable-agent"],
+      );
+      return true;
     case "revoke-sessions":
       await h.ownerPool.query(
         "UPDATE auth_sessions SET revoked_at = $1 WHERE revoked_at IS NULL",

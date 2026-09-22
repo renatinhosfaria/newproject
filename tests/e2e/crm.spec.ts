@@ -169,3 +169,37 @@ test("conteúdo externo é exibido como texto, sem HTML interpretado", async ({
     undefined,
   );
 });
+
+test("telefone recusado pelo servidor fica associado ao campo", async ({
+  page,
+  actor,
+}) => {
+  await login(page, actor);
+  await page.getByRole("button", { name: "Novo lead" }).click();
+  await page.getByLabel("Nome").fill("Lead com telefone");
+  const phone = page.getByLabel("Telefone");
+  await phone.fill("123");
+  await page.getByRole("button", { name: "Salvar lead" }).click();
+  await expect(phone).toHaveAttribute("aria-invalid", "true");
+  await expect(phone).toHaveAccessibleDescription(
+    "Telefone não reconhecido. Use o formato +55 11 91234-5678.",
+  );
+  await expect(phone).toBeFocused();
+  await expect(page.getByLabel("Nome")).toHaveValue("Lead com telefone");
+});
+
+test("sessão encerrada ao salvar lead leva ao login", async ({
+  page,
+  actor,
+  stack,
+}) => {
+  await login(page, actor);
+  await page.getByRole("button", { name: "Novo lead" }).click();
+  await page.getByLabel("Nome").fill("Lead sem sessão");
+  await stack.control("revoke-sessions");
+  await page.getByRole("button", { name: "Salvar lead" }).click();
+  await expect(page).toHaveURL(/\/login\?motivo=sessao$/);
+  await expect(page.getByRole("main").getByRole("status")).toContainText(
+    "Sua sessão terminou. Entre novamente.",
+  );
+});

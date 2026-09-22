@@ -242,6 +242,34 @@ describe("subscribeRun", () => {
     }
   });
 
+  it("retries gateway failures (502/503/504 without problem) while the API restarts", async () => {
+    const gateway = (status: number) =>
+      new Response("<html>bad gateway</html>", {
+        status,
+        headers: { "content-type": "text/html" },
+      });
+    const { calls, fetch } = fakeFetch([
+      gateway(502),
+      gateway(504),
+      gateway(503),
+      streamResponse([frame(event(1, "agent.run.completed"))]),
+    ]);
+    const { sleeps, sleep } = recorder();
+    const seen: number[] = [];
+    await subscribeRun({
+      sessionId: SESSION,
+      runId: RUN,
+      onEvent: (e) => seen.push(e.sequence),
+      onExpired: () => {},
+      signal: new AbortController().signal,
+      fetch,
+      sleep,
+    });
+    expect(calls).toHaveLength(4);
+    expect(sleeps).toEqual([1000, 2000, 4000]);
+    expect(seen).toEqual([1]);
+  });
+
   it("reports 401 and 410 without reconnecting", async () => {
     const unauthorized = fakeFetch([problem(401, "SESSION_INVALID")]);
     let loggedOut = 0;

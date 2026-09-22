@@ -106,3 +106,40 @@ test("sessão revogada durante o streaming leva ao login", async ({
     "Sua sessão terminou. Entre novamente.",
   );
 });
+
+test("erro HTTP não retentável no acompanhamento não entra em laço de reconexão", async ({
+  page,
+  actor,
+  stack,
+}) => {
+  const counts = { events: 0, session: 0 };
+  page.on("request", (request) => {
+    const path = new URL(request.url()).pathname;
+    if (/^\/api\/agent-sessions\/[^/]+\/events$/.test(path)) counts.events += 1;
+    else if (/^\/api\/agent-sessions\/[^/]+$/.test(path)) counts.session += 1;
+  });
+  await openAgentSession(page, actor);
+  await startHeldRun(page);
+  // The Agent becomes unavailable while the run is still active: the stream
+  // answers 403 on reconnection and GET session still shows the run running.
+  await stack.control("disable-agent");
+  await stack.control("drop-sse");
+  const alert = page
+    .getByRole("main")
+    .getByRole("alert")
+    .filter({ hasText: "Não foi possível acompanhar a execução" });
+  await expect(alert).toBeVisible();
+  const before = { ...counts };
+  await page.waitForTimeout(5000);
+  // No automatic re-follow: at most one extra request of each kind.
+  expect(counts.events - before.events).toBeLessThanOrEqual(1);
+  expect(counts.session - before.session).toBeLessThanOrEqual(1);
+  await expect(alert).toBeVisible();
+
+  // Manual retry once the policy allows it again resumes the run.
+  await stack.control("enable-agent");
+  await page.getByRole("button", { name: "Tentar novamente" }).click();
+  await expect(alert).toHaveCount(0);
+  await stack.control("release");
+  await expect(page.getByText(DRAFT_TEXT, { exact: true })).toHaveCount(1);
+});

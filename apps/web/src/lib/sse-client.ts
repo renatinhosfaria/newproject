@@ -94,15 +94,19 @@ function abortableSleep(ms: number, signal: AbortSignal): Promise<void> {
 
 async function readProblem(response: Response): Promise<{
   code: string;
-  retryable: boolean;
+  retryable: boolean | undefined;
 }> {
   const parsed = ProblemSchema.safeParse(
     await response.json().catch(() => undefined),
   );
   return parsed.success
     ? { code: parsed.data.code, retryable: parsed.data.retryable }
-    : { code: "HTTP_ERROR", retryable: false };
+    : { code: "HTTP_ERROR", retryable: undefined };
 }
+
+// Gateway/restart failures (e.g. the reverse proxy while the API restarts)
+// are transient unless the API itself says the problem is not retryable.
+const TRANSIENT_STATUS = new Set([502, 503, 504]);
 
 /**
  * Follows one run until a terminal event, reconnecting with Last-Event-ID on
@@ -158,7 +162,10 @@ export async function subscribeRun(
     }
     if (!response.ok || !response.body) {
       const problem = await readProblem(response);
-      if (response.status === 503 && problem.retryable) {
+      if (
+        problem.retryable === true ||
+        (TRANSIENT_STATUS.has(response.status) && problem.retryable !== false)
+      ) {
         await backoff();
         continue;
       }

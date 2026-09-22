@@ -61,6 +61,13 @@
   /* muted (#718097) tem ~4:1 sobre card/surface: abaixo de AA para texto
      pequeno. Texto auxiliar pequeno usa ink; muted fica para texto grande. */
   --text-small: var(--ink);
+
+  /* Tokens derivados (registrados em docs/DESIGN.md). Bordas que
+     identificam controles precisam de 3:1 (WCAG 1.4.11): line (#E5EBF3)
+     não atinge; muted atinge ~4:1 sobre card. yellow-strong é yellow
+     escurecido para borda de status com ~3,4:1 sobre card. */
+  --control-border: var(--muted);
+  --yellow-strong: #b98100;
   --purple-tint: rgba(117, 100, 238, 0.12);
   --red-tint: rgba(228, 0, 43, 0.08);
   --yellow-tint: rgba(255, 184, 28, 0.18);

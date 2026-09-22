@@ -114,3 +114,35 @@ test("mutação rejeitada por CSRF mostra erro e não cria o lead", async ({
   const leads = await page.request.get("/api/leads");
   expect((await leads.json()).items).toHaveLength(0);
 });
+
+test("falha ao revogar no logout não finge saída e permite tentar de novo", async ({
+  page,
+  actor,
+}) => {
+  await login(page, actor);
+  await expect(page.getByRole("button", { name: "Novo lead" })).toBeVisible();
+  let failed = false;
+  await page.route("**/api/auth/logout", async (route) => {
+    if (failed) return route.continue();
+    failed = true;
+    await route.abort("connectionreset");
+  });
+  await page.getByRole("button", { name: "Sair" }).click();
+  await expect(
+    page
+      .getByRole("alert")
+      .filter({ hasText: "Não foi possível encerrar a sessão" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/leads/);
+  const me = await page.evaluate(() =>
+    fetch("/api/auth/me").then((response) => response.status),
+  );
+  expect(me).toBe(200);
+
+  await page.getByRole("button", { name: "Sair" }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  const after = await page.evaluate(() =>
+    fetch("/api/auth/me").then((response) => response.status),
+  );
+  expect(after).toBe(401);
+});

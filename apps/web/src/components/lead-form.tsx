@@ -2,12 +2,14 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import {
+  CreateLeadRequestSchema,
   LeadSchema,
   LeadStageSchema,
   type Lead,
   type LeadStage,
 } from "@pacaembu/contracts";
-import { api, describeError } from "../lib/api";
+import { ApiError, api, describeError } from "../lib/api";
+import { useSessionEnded } from "./app-shell";
 import { Alert, Button, SelectField, TextField, styles } from "./ui";
 
 export const STAGE_LABEL: Record<LeadStage, string> = {
@@ -50,7 +52,11 @@ function validate(values: Values): Errors {
     errors.name = "Informe um nome com pelo menos 2 caracteres.";
   else if (name.length > 160)
     errors.name = "Use no máximo 160 caracteres no nome.";
-  if (values.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+  // Same rule as the API contract, so the server cannot reject it later.
+  if (
+    values.email.trim() &&
+    !CreateLeadRequestSchema.shape.email.safeParse(values.email.trim()).success
+  )
     errors.email = "Informe um e-mail válido ou deixe em branco.";
   if (values.phone.length > 40)
     errors.phone = "Use no máximo 40 caracteres no telefone.";
@@ -80,6 +86,11 @@ export function LeadForm({
   const [failure, setFailure] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const form = useRef<HTMLFormElement>(null);
+  const sessionEnded = useSessionEnded();
+
+  function focusField(name: string) {
+    form.current?.querySelector<HTMLElement>(`[name="${name}"]`)?.focus();
+  }
 
   const set =
     (key: keyof Values) =>
@@ -93,7 +104,7 @@ export function LeadForm({
     setFailure(null);
     const first = Object.keys(found)[0];
     if (first) {
-      form.current?.querySelector<HTMLElement>(`[name="${first}"]`)?.focus();
+      focusField(first);
       return;
     }
     setBusy(true);
@@ -130,9 +141,23 @@ export function LeadForm({
           );
       onSaved(saved);
     } catch (error) {
-      // Values stay in the form so the user can correct and resend.
-      setFailure(describeError(error));
       setBusy(false);
+      if (sessionEnded(error)) return;
+      // Values stay in the form so the user can correct and resend.
+      if (
+        error instanceof ApiError &&
+        error.code === "VALIDATION_ERROR" &&
+        values.phone.trim()
+      ) {
+        // Client checks cover every other field; the server additionally
+        // validates the phone number, so point the error at that field.
+        setErrors({
+          phone: "Telefone não reconhecido. Use o formato +55 11 91234-5678.",
+        });
+        focusField("phone");
+        return;
+      }
+      setFailure(describeError(error));
     }
   }
 

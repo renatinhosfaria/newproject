@@ -172,6 +172,10 @@ export function AgentPanel({ sessionId }: { sessionId: string }) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const following = useRef(new Map<string, AbortController>());
+  // Runs whose live follow ended in an HTTP error. They are not followed
+  // again automatically (that would loop while the run stays active); the
+  // user resumes them explicitly with "Tentar novamente".
+  const stalled = useRef(new Set<string>());
   // Key bound to one user intention (this exact content); reused on retry.
   const intention = useRef<{ content: string; key: string } | null>(null);
   const composerId = useId();
@@ -234,7 +238,7 @@ export function AgentPanel({ sessionId }: { sessionId: string }) {
 
   const follow = useCallback(
     (runId: string) => {
-      if (following.current.has(runId)) return;
+      if (following.current.has(runId) || stalled.current.has(runId)) return;
       const controller = new AbortController();
       following.current.set(runId, controller);
       const patch = (update: (run: LiveRun) => LiveRun) =>
@@ -274,6 +278,7 @@ export function AgentPanel({ sessionId }: { sessionId: string }) {
       })
         .catch((error: unknown) => {
           if (controller.signal.aborted) return;
+          stalled.current.add(runId);
           setStreamError(
             error instanceof SseHttpError
               ? "Não foi possível acompanhar a execução em tempo real. O estado abaixo vem do histórico salvo."
@@ -294,6 +299,13 @@ export function AgentPanel({ sessionId }: { sessionId: string }) {
     for (const run of session?.runs ?? [])
       if (isActive(run)) follow(run.run_id);
   }, [session, follow]);
+
+  async function resumeFollowing() {
+    setStreamError(null);
+    stalled.current.clear();
+    const next = await loadSession();
+    for (const run of next?.runs ?? []) if (isActive(run)) follow(run.run_id);
+  }
 
   async function send(text: string) {
     if (!text.trim()) {
@@ -385,7 +397,16 @@ export function AgentPanel({ sessionId }: { sessionId: string }) {
           aria-label="Histórico da sessão"
         >
           {notice ? <Alert tone="info">{notice}</Alert> : null}
-          {streamError ? <Alert>{streamError}</Alert> : null}
+          {streamError ? (
+            <div className={styles.stack}>
+              <Alert>{streamError}</Alert>
+              <div>
+                <Button variant="secondary" onClick={resumeFollowing}>
+                  Tentar novamente
+                </Button>
+              </div>
+            </div>
+          ) : null}
           {session.runs.length === 0 ? (
             <p className={styles.meta}>
               Nenhum pedido ainda. Descreva o que o Agent deve preparar; o
