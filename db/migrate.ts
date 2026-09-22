@@ -21,6 +21,7 @@ export async function migrate(pool: pg.Pool): Promise<void> {
     "0002_crm.sql",
     "0003_agents.sql",
     "0004_reliability.sql",
+    "0005_agent_session_hardening.sql",
   ];
   for (const file of files) {
     const version = file.slice(0, 4);

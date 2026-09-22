@@ -19,6 +19,11 @@ Verificação deste round: `./node_modules/.bin/vitest run tests/unit tests/cont
 - `agent_sessions` agora tem `CHECK (membership_role = 'broker')`, além do default e da FK composta de membership, impedindo supervisor explícito.
 - Foram adicionados índices com prefixos exatos para as FKs compostas de membership, broker/usuário, agente, lead e conversa.
 
+## Fix round 3
+
+- Adicionada `db/migrations/0005_agent_session_hardening.sql`, migration forward idempotente para bases que já registraram 0003. Ela aplica a coluna/constraint/FKs broker-only, índices compostos e guards de disponibilidade sem depender de reexecutar 0003.
+- `db/migrate.ts` agora inclui a versão 0005; bancos limpos e bancos existentes recebem o hardening.
+
 ## Arquivos
 
 - `db/migrations/0001_identity.sql` a `0004_reliability.sql`: extensões, enums, 16 tabelas do ciclo, chaves compostas, índices, trigger de escopo de Agent, RLS/policies e grants para `pacaembu_app`.
