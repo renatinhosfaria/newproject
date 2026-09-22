@@ -1,5 +1,12 @@
 # Estratégia de testes
 
+## Limites do ciclo atual
+
+Os testes desta entrega verificam schemas Zod, máquina de estados de mensagens
+e OpenAPI 3.1. Integração PostgreSQL, autorização, SSE, idempotência e E2E
+serão ativados pelas tarefas consumidoras. Aprovação/envio, pairing e
+mensagens WhatsApp permanecem cenários do roadmap.
+
 ## Objetivo
 
 Garantir que o CRM preserve isolamento por corretor, consistência de mensagens e previsibilidade do fluxo de Agents antes de conectar múltiplos perfis Hermes e números WhatsApp.
@@ -55,9 +62,7 @@ Fluxos mínimos:
 5. abertura e troca de sessão de Agent;
 6. streaming de resposta e reconexão;
 7. geração de rascunho;
-8. aprovação e cancelamento de mensagem;
-9. pairing e desconexão simulados;
-10. mensagem duplicada sem duplicação no CRM.
+8. mensagem duplicada sem duplicação no CRM (roadmap de integração).
 
 ### Carga e resiliência
 

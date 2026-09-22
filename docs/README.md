@@ -2,6 +2,14 @@
 
 Documentação inicial da arquitetura do CRM e da integração com o Hermes Agent.
 
+## Escopo atual
+
+O checkout implementa o ciclo preparatório verificável: sessão por cookie,
+workspace/membership, leads, conversas, mensagens, Agent Atendimento em
+`draft_only` e eventos SSE com replay. WhatsApp real, pairing, Hermes runtime,
+outbox, aprovação/envio e dashboard completo são roadmap e não fazem parte das
+rotas ou migrations deste ciclo.
+
 ## Documentos
 
 - [Design system e especificação de UX/UI](./DESIGN.md)
@@ -23,10 +31,11 @@ Documentação inicial da arquitetura do CRM e da integração com o Hermes Agen
 
 - O CRM será a interface principal para os corretores.
 - O CRM terá autenticação, autorização e banco de dados próprios.
-- O Hermes Agent será executado em um VPS administrado pelo supervisor.
-- Cada corretor terá um perfil Hermes e uma sessão WhatsApp próprios.
+- O adapter simulado mantém a fronteira do Hermes; o runtime em VPS é roadmap.
+- Perfis Hermes e sessões WhatsApp próprios entram no ciclo de integração futuro.
 - Os agentes especialistas serão distribuídos com a mesma configuração funcional para os perfis.
-- O `broker_id` será a chave de isolamento dos dados do corretor.
+- `workspace_memberships` é a única fonte de papel; `workspace_id` e
+  `broker_id` derivado formam o escopo dos dados.
 - O MVP será validado com um único corretor antes da expansão para 15–20 corretores.
 
 ## Referências oficiais

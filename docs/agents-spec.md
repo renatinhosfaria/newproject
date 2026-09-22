@@ -1,5 +1,9 @@
 # Especificação dos Agents
 
+> **Ciclo atual:** somente o Agent Atendimento simulado é habilitado. Ele lê
+> dados autorizados e produz rascunho; capacidades de campanhas, arquivos,
+> aprovação e envio são roadmap.
+
 ## Objetivo
 
 Os Agents ajudam o corretor a interpretar a carteira, preparar respostas e tomar decisões. No MVP, eles são **advisory-first**: podem ler o contexto permitido e produzir rascunhos, análises ou briefs, mas não enviam WhatsApp nem alteram o CRM automaticamente.
@@ -72,7 +76,7 @@ Toda execução deve produzir uma saída estruturada antes da apresentação no 
 
 ```json
 {
-  "type": "answer",
+  "type": "draft",
   "content": "Texto apresentado ao corretor",
   "citations": [],
   "proposed_actions": [],
@@ -82,9 +86,9 @@ Toda execução deve produzir uma saída estruturada antes da apresentação no 
 }
 ```
 
-Valores de `type`: `answer`, `analysis`, `draft`, `creative_brief`, `action_proposal` ou `error`.
+Valores de `type` no ciclo atual: `draft` ou `error`.
 
-Valores de `status`: `queued`, `running`, `completed`, `failed`, `cancelled`.
+Valores de `status` do run: `queued`, `running`, `completed`, `failed`, `cancelled`.
 
 Uma ação proposta deve conter:
 

@@ -1,5 +1,12 @@
 # Arquitetura do sistema
 
+## Ciclo executável atual
+
+O primeiro ciclo usa um monorepo com API, Web futuro e `packages/contracts`.
+O `MockHermesAdapter` fica atrás da porta do Agent e não faz chamadas de rede.
+Não há `apps/orchestrator`, perfil Hermes, pairing, WhatsApp, outbox ou
+dashboard nas rotas atuais; esses componentes são substituições posteriores.
+
 ## Visão geral
 
 O sistema terá um CRM central e vários runtimes Hermes isolados no mesmo VPS inicialmente. O CRM será a fonte de verdade para usuários, corretores, leads, conversas, permissões e auditoria.
@@ -12,29 +19,17 @@ flowchart TB
     API --> DB[(PostgreSQL)]
     API --> Queue[Redis / fila de eventos]
     API --> Files[MinIO / armazenamento de arquivos]
-    API --> Orchestrator[Hermes Orchestrator]
-
-    Orchestrator --> H1[Hermes profile 001]
-    Orchestrator --> H2[Hermes profile 002]
-    Orchestrator --> HN[Hermes profile N]
-
-    H1 --> W1[WhatsApp 001]
-    H2 --> W2[WhatsApp 002]
-    HN --> WN[WhatsApp N]
-
-    H1 --> API
-    H2 --> API
-    HN --> API
+    API --> Mock[MockHermesAdapter / Agent draft]
 ```
 
 ## Componentes
 
-### CRM Web
+### CRM Web (ciclo atual: telas mínimas; dashboard completo é roadmap)
 
 Interface para:
 
 - login;
-- dashboard;
+- fluxo de leads, conversas e Agent;
 - leads e Kanban;
 - conversas;
 - agentes;
@@ -56,7 +51,7 @@ Responsável por:
 
 O frontend nunca deve escolher diretamente o perfil Hermes nem acessar seus endpoints internos.
 
-### Hermes Orchestrator
+### Hermes Orchestrator (roadmap)
 
 Serviço responsável por manter o mapa entre o CRM e os runtimes Hermes:
 
@@ -70,7 +65,7 @@ broker_id
 
 Ele também deve controlar timeout, reconexão, estado de disponibilidade e versão do pacote de agentes.
 
-### Hermes runtime por corretor
+### Hermes runtime por corretor (roadmap)
 
 Cada corretor terá um processo ou container separado com:
 
@@ -86,19 +81,19 @@ Cada corretor terá um processo ou container separado com:
 
 Os agentes especialistas serão instalados a partir de um pacote versionado comum. A memória privada e as sessões permanecerão no perfil do corretor.
 
-### PostgreSQL
+### PostgreSQL (ciclo atual)
 
 Armazena os dados de negócio e de integração do CRM. O Hermes não deve acessar o banco diretamente. O agente deve usar ferramentas ou endpoints da CRM API com escopo de corretor.
 
-### Redis
+### Redis (roadmap de processamento)
 
 Usado para filas, locks, eventos temporários, status de processamento e controle de idempotência. O MVP pode iniciar sem Redis se o fluxo for síncrono, mas a integração com WhatsApp deverá evoluir para uma fila persistente.
 
-### MinIO
+### MinIO (roadmap)
 
 Armazena documentos, imagens, vídeos e artefatos. Cada objeto deve conter metadados de proprietário e passar pela autorização da CRM API.
 
-## Fluxo de conversa no CRM
+## Fluxo de conversa no CRM (roadmap de integração)
 
 ```text
 Browser
@@ -112,7 +107,7 @@ Browser
 
 O Hermes oferece integração programática por API HTTP/SSE e JSON-RPC. A implementação deve encapsular essa escolha no Orchestrator para que o frontend não dependa do protocolo Hermes.
 
-## Fluxo de mensagem do WhatsApp
+## Fluxo de mensagem do WhatsApp (roadmap)
 
 ```text
 Lead
@@ -127,7 +122,7 @@ Lead
 
 O estado da mensagem deve permitir `draft`, `pending_approval`, `approved`, `sent`, `failed` e `cancelled`.
 
-## Modelo de implantação inicial
+## Modelo de implantação inicial (roadmap)
 
 ```text
 reverse-proxy

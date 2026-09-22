@@ -1,8 +1,13 @@
 # Contrato de integração CRM–Hermes
 
+> **Roadmap:** a integração de rede e HMAC não é executada no ciclo
+> preparatório. Hoje a API usa `MockHermesAdapter` com a mesma fronteira de
+> `startAgentRun`, `streamAgentEvents` e `stopAgentRun`; o contrato abaixo é
+> reservado para o runtime real.
+
 Este documento define a fronteira entre o CRM e os runtimes Hermes. Os nomes de endpoints são uma proposta inicial e devem ser refinados durante o protótipo.
 
-## Identidade de roteamento
+## Identidade de roteamento (roadmap)
 
 O CRM mantém o relacionamento:
 
@@ -40,9 +45,9 @@ Toda solicitação ao Hermes deve receber contexto resolvido pelo servidor:
 
 O agente não pode substituir o `broker_id` recebido do servidor.
 
-## Endpoints do CRM
+## Endpoints do CRM no ciclo atual
 
-### Perfil Hermes
+### Perfil Hermes (roadmap; não exposto agora)
 
 ```http
 GET /api/me/hermes
@@ -52,7 +57,7 @@ POST /api/me/hermes/restart
 GET /api/me/hermes/status
 ```
 
-### Agentes
+### Agentes (ciclo atual)
 
 ```http
 GET /api/agents
@@ -60,20 +65,28 @@ POST /api/agent-sessions
 GET /api/agent-sessions/:session_id
 POST /api/agent-sessions/:session_id/messages
 GET /api/agent-sessions/:session_id/events
-POST /api/agent-sessions/:session_id/stop
 ```
 
-### Conversas
+`POST /api/agent-sessions/:session_id/stop` é uma operação do runtime futuro e
+permanece fora deste ciclo.
+
+### Conversas (ciclo atual)
 
 ```http
 GET /api/conversations
+POST /api/conversations
 GET /api/conversations/:conversation_id
 GET /api/conversations/:conversation_id/messages
+```
+
+### Conversas e outbox (roadmap)
+
+```http
 POST /api/conversations/:conversation_id/drafts/:message_id/approve
 POST /api/conversations/:conversation_id/drafts/:message_id/cancel
 ```
 
-## Eventos internos
+## Eventos internos (roadmap; SSE atual usa AgentEvent)
 
 Eventos devem possuir `event_id` único e ser processados de forma idempotente.
 
@@ -107,6 +120,12 @@ Eventos mínimos:
 - `message.sent`;
 - `message.send_failed`.
 
+## HMAC e replay (roadmap)
+
+Quando o runtime real for conectado, `X-Hermes-Timestamp`,
+`X-Hermes-Event-Id` e `X-Hermes-Signature` formarão a proteção HMAC. Nenhum
+header HMAC é requisito do adapter simulado.
+
 ## Idempotência
 
 O processamento deve ser idempotente para:
@@ -119,17 +138,23 @@ O processamento deve ser idempotente para:
 
 O `external_message_id` do WhatsApp deve ser salvo antes de iniciar um processamento que possa ser repetido.
 
-## Estados de mensagem
+## Estados de mensagem do ciclo atual
 
 ```text
 received
 processing
 draft
+failed
+```
+
+Os estados de outbox abaixo pertencem ao roadmap de integração e não são
+aceitos pelas rotas ou schemas atuais:
+
+```text
 pending_approval
 approved
 sending
 sent
-failed
 cancelled
 ```
 

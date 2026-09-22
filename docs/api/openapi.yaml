@@ -3,19 +3,18 @@ info:
   title: Pacaembu Orbit CRM API
   version: 0.1.0
   description: |
-    Contrato inicial da API do CRM. A identidade do corretor é resolvida
-    pela sessão autenticada; o cliente nunca escolhe diretamente o broker_id
-    nem o perfil Hermes.
+    Contrato executável do ciclo preparatório do CRM. O papel vem da
+    membership ativa no workspace; valores de identidade enviados pelo cliente
+    não são usados para autorização. WhatsApp, outbox, aprovação e pairing
+    pertencem ao roadmap posterior.
 servers:
   - url: /
     description: Mesmo domínio do CRM Web em cada ambiente
 tags:
   - name: Auth
-  - name: Dashboard
   - name: Leads
-  - name: Agents
   - name: Conversations
-  - name: Hermes
+  - name: Agents
 security:
   - sessionCookie: []
 paths:
@@ -29,85 +28,57 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
+            schema: { $ref: '#/components/schemas/LoginRequest' }
       responses:
         '200':
           description: Sessão criada
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/SessionUser'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '429':
-          $ref: '#/components/responses/RateLimited'
-
+              schema: { $ref: '#/components/schemas/SessionUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/RateLimited' }
   /api/auth/logout:
     post:
       operationId: logout
       tags: [Auth]
       summary: Encerra a sessão atual
       responses:
-        '204':
-          description: Sessão encerrada
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+        '204': { description: Sessão encerrada }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
   /api/auth/me:
     get:
       operationId: getCurrentUser
       tags: [Auth]
-      summary: Retorna o usuário e o ambiente atual
+      summary: Retorna o usuário e o workspace atual
       responses:
         '200':
           description: Contexto autenticado
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/SessionUser'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/dashboard/summary:
-    get:
-      operationId: getDashboardSummary
-      tags: [Dashboard]
-      summary: Retorna os indicadores do usuário ou da equipe autorizada
-      parameters:
-        - $ref: '#/components/parameters/PeriodFrom'
-        - $ref: '#/components/parameters/PeriodTo'
-      responses:
-        '200':
-          description: Resumo do dashboard
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DashboardSummary'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+              schema: { $ref: '#/components/schemas/SessionUser' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/leads:
     get:
       operationId: listLeads
       tags: [Leads]
       summary: Lista leads dentro do escopo autorizado
       parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/Search'
-        - $ref: '#/components/parameters/Stage'
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - { $ref: '#/components/parameters/Search' }
+        - { $ref: '#/components/parameters/Stage' }
       responses:
         '200':
           description: Página de leads
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/LeadPage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { $ref: '#/components/schemas/LeadPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
     post:
       operationId: createLead
       tags: [Leads]
@@ -116,23 +87,18 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateLeadRequest'
+            schema: { $ref: '#/components/schemas/CreateLeadRequest' }
       responses:
         '201':
           description: Lead criado
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Lead'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+              schema: { $ref: '#/components/schemas/Lead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /api/leads/{leadId}:
-    parameters:
-      - $ref: '#/components/parameters/LeadId'
+    parameters: [{ $ref: '#/components/parameters/LeadId' }]
     get:
       operationId: getLead
       tags: [Leads]
@@ -142,12 +108,9 @@ paths:
           description: Lead
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Lead'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
+              schema: { $ref: '#/components/schemas/Lead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
     patch:
       operationId: updateLead
       tags: [Leads]
@@ -156,22 +119,85 @@ paths:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateLeadRequest'
+            schema: { $ref: '#/components/schemas/UpdateLeadRequest' }
       responses:
         '200':
           description: Lead atualizado
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/Lead'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+              schema: { $ref: '#/components/schemas/Lead' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/conversations:
+    get:
+      operationId: listConversations
+      tags: [Conversations]
+      summary: Lista conversas autorizadas
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+        - { $ref: '#/components/parameters/Search' }
+      responses:
+        '200':
+          description: Página de conversas
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationPage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      operationId: createConversation
+      tags: [Conversations]
+      summary: Abre uma conversa para um lead autorizado
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateConversationRequest' }
+      responses:
+        '201':
+          description: Conversa criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /api/conversations/{conversationId}:
+    parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+    get:
+      operationId: getConversation
+      tags: [Conversations]
+      summary: Retorna uma conversa autorizada
+      responses:
+        '200':
+          description: Conversa
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Conversation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /api/conversations/{conversationId}/messages:
+    parameters: [{ $ref: '#/components/parameters/ConversationId' }]
+    get:
+      operationId: listConversationMessages
+      tags: [Conversations]
+      summary: Lista mensagens da conversa
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PageSize' }
+      responses:
+        '200':
+          description: Mensagens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MessagePage' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /api/agents:
     get:
       operationId: listAgents
@@ -184,241 +210,95 @@ paths:
             application/json:
               schema:
                 type: array
-                items:
-                  $ref: '#/components/schemas/Agent'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+                items: { $ref: '#/components/schemas/Agent' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
   /api/agent-sessions:
     post:
       operationId: createAgentSession
       tags: [Agents]
       summary: Abre uma sessão isolada de Agent
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/CreateAgentSessionRequest'
+            schema: { $ref: '#/components/schemas/CreateAgentSessionRequest' }
       responses:
         '201':
           description: Sessão criada
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AgentSession'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '422':
-          $ref: '#/components/responses/ValidationError'
-
+              schema: { $ref: '#/components/schemas/AgentSession' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /api/agent-sessions/{sessionId}:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
+    parameters: [{ $ref: '#/components/parameters/SessionId' }]
     get:
       operationId: getAgentSession
       tags: [Agents]
       summary: Retorna uma sessão de Agent autorizada
       responses:
         '200':
-          description: Sessão
+          description: Sessão com execuções
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AgentSession'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
+              schema: { $ref: '#/components/schemas/AgentSession' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
   /api/agent-sessions/{sessionId}/messages:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
+    parameters: [{ $ref: '#/components/parameters/SessionId' }]
     post:
       operationId: sendAgentMessage
       tags: [Agents]
       summary: Envia uma tarefa para a sessão do Agent
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
+      parameters: [{ $ref: '#/components/parameters/IdempotencyKey' }]
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/AgentMessageRequest'
+            schema: { $ref: '#/components/schemas/AgentMessageRequest' }
       responses:
         '202':
-          description: Execução aceita para processamento
+          description: Execução aceita; o estado final chega por eventos e não é inferido nesta resposta
           content:
             application/json:
-              schema:
-                $ref: '#/components/schemas/AgentRun'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
+              schema: { $ref: '#/components/schemas/AgentRunAccepted' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /api/agent-sessions/{sessionId}/events:
-    parameters:
-      - $ref: '#/components/parameters/SessionId'
+    parameters: [{ $ref: '#/components/parameters/SessionId' }]
     get:
       operationId: streamAgentEvents
       tags: [Agents]
-      summary: Transmite eventos de execução por SSE
-      description: O cliente deve reconectar usando Last-Event-ID quando disponível.
+      summary: Transmite eventos autorizados por SSE
+      description: |
+        Eventos têm id `<run_id>:<sequence>`. `Last-Event-ID` retoma eventos
+        posteriores. Um cursor expirado responde 410 e um cursor inválido 422.
+      parameters:
+        - name: run_id
+          in: query
+          required: false
+          schema: { type: string }
+        - name: Last-Event-ID
+          in: header
+          required: false
+          schema: { type: string, pattern: '^[^:]+:[1-9][0-9]*$' }
       responses:
         '200':
           description: Fluxo de eventos
           content:
             text/event-stream:
-              schema:
-                type: string
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/conversations:
-    get:
-      operationId: listConversations
-      tags: [Conversations]
-      summary: Lista conversas autorizadas
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-        - $ref: '#/components/parameters/Search'
-      responses:
-        '200':
-          description: Página de conversas
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ConversationPage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/conversations/{conversationId}/messages:
-    parameters:
-      - $ref: '#/components/parameters/ConversationId'
-    get:
-      operationId: listConversationMessages
-      tags: [Conversations]
-      summary: Lista mensagens da conversa
-      parameters:
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/PageSize'
-      responses:
-        '200':
-          description: Mensagens
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MessagePage'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/conversations/{conversationId}/drafts/{messageId}/approve:
-    parameters:
-      - $ref: '#/components/parameters/ConversationId'
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      operationId: approveDraft
-      tags: [Conversations]
-      summary: Aprova um rascunho de mensagem
-      parameters:
-        - $ref: '#/components/parameters/IdempotencyKey'
-      responses:
-        '202':
-          description: Mensagem encaminhada para a outbox
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/OutboxStatus'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /api/conversations/{conversationId}/drafts/{messageId}/cancel:
-    parameters:
-      - $ref: '#/components/parameters/ConversationId'
-      - $ref: '#/components/parameters/MessageId'
-    post:
-      operationId: cancelDraft
-      tags: [Conversations]
-      summary: Cancela um rascunho de mensagem
-      responses:
-        '200':
-          description: Rascunho cancelado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Message'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
-
-  /api/me/hermes:
-    get:
-      operationId: getMyHermesProfile
-      tags: [Hermes]
-      summary: Retorna o status do perfil Hermes do corretor
-      responses:
-        '200':
-          description: Perfil Hermes e conexão
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HermesStatus'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  /api/me/hermes/pairing/start:
-    post:
-      operationId: startHermesPairing
-      tags: [Hermes]
-      summary: Inicia o pairing do WhatsApp
-      responses:
-        '202':
-          description: Pairing iniciado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairingState'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '503':
-          $ref: '#/components/responses/ServiceUnavailable'
-
-  /api/me/hermes/status:
-    get:
-      operationId: getHermesStatus
-      tags: [Hermes]
-      summary: Consulta o estado atual do runtime Hermes
-      responses:
-        '200':
-          description: Estado do runtime
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HermesStatus'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
+              schema: { type: string }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '410': { $ref: '#/components/responses/EventReplayUnavailable' }
+        '422': { $ref: '#/components/responses/ValidationError' }
 
 components:
   securitySchemes:
@@ -426,7 +306,7 @@ components:
       type: apiKey
       in: cookie
       name: crm_session
-      description: Cookie HttpOnly, Secure e SameSite configurado pelo ambiente.
+      description: Cookie HttpOnly, Secure fora do ambiente local e SameSite=Lax.
   parameters:
     LeadId:
       name: leadId
@@ -440,11 +320,6 @@ components:
       schema: { type: string, format: uuid }
     ConversationId:
       name: conversationId
-      in: path
-      required: true
-      schema: { type: string, format: uuid }
-    MessageId:
-      name: messageId
       in: path
       required: true
       schema: { type: string, format: uuid }
@@ -463,16 +338,7 @@ components:
     Stage:
       name: stage
       in: query
-      schema:
-        $ref: '#/components/schemas/LeadStage'
-    PeriodFrom:
-      name: from
-      in: query
-      schema: { type: string, format: date }
-    PeriodTo:
-      name: to
-      in: query
-      schema: { type: string, format: date }
+      schema: { $ref: '#/components/schemas/LeadStage' }
     IdempotencyKey:
       name: Idempotency-Key
       in: header
@@ -480,48 +346,45 @@ components:
       schema: { type: string, minLength: 16, maxLength: 128 }
   responses:
     Unauthorized:
-      description: Sessão ausente ou inválida
+      description: Sessão ausente, inválida ou membership suspensa
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     Forbidden:
-      description: Ação fora do escopo permitido
+      description: Ação fora do escopo permitido (CSRF_ORIGIN_REQUIRED ou CSRF_ORIGIN_INVALID)
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     NotFound:
       description: Recurso não encontrado no escopo autorizado
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     Conflict:
-      description: Estado incompatível ou idempotência conflitante
+      description: Estado incompatível, workspace ambíguo ou idempotência conflitante
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     ValidationError:
-      description: Dados inválidos
+      description: Dados inválidos, inclusive INVALID_EVENT_CURSOR
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     RateLimited:
       description: Muitas tentativas
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-    ServiceUnavailable:
-      description: Hermes ou serviço dependente indisponível
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    EventReplayUnavailable:
+      description: EVENT_REPLAY_UNAVAILABLE após a retenção de sete dias
       content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    ServiceUnavailable:
+      description: Hermes indisponível (HERMES_PROFILE_UNAVAILABLE)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
   schemas:
     Problem:
       type: object
-      required: [type, title, status, code, request_id]
+      required: [type, title, status, code, request_id, retryable]
       properties:
         type: { type: string, format: uri-reference }
         title: { type: string }
-        status: { type: integer }
+        status: { type: integer, minimum: 100, maximum: 599 }
         code: { type: string }
         detail: { type: string }
         request_id: { type: string }
@@ -531,40 +394,42 @@ components:
       required: [email, password]
       properties:
         email: { type: string, format: email }
-        password: { type: string, minLength: 8, writeOnly: true }
+        password: { type: string, minLength: 8, maxLength: 256, writeOnly: true }
+        workspace_id: { type: string, format: uuid }
     SessionUser:
       type: object
-      required: [id, name, email, role, workspace_id]
+      required: [id, membership_id, name, email, role, workspace_id, broker_id]
       properties:
         id: { type: string, format: uuid }
+        membership_id: { type: string, format: uuid }
         name: { type: string }
         email: { type: string, format: email }
-        role: { type: string, enum: [broker, supervisor, admin] }
+        role: { type: string, enum: [broker, supervisor] }
         workspace_id: { type: string, format: uuid }
         broker_id: { type: [string, 'null'], format: uuid }
     PageInfo:
       type: object
       required: [page, page_size, total]
       properties:
-        page: { type: integer }
-        page_size: { type: integer }
-        total: { type: integer }
+        page: { type: integer, minimum: 1 }
+        page_size: { type: integer, minimum: 1, maximum: 100 }
+        total: { type: integer, minimum: 0 }
     LeadStage:
       type: string
       enum: [novo, contato, visita, proposta, aprovado, perdido]
     Lead:
       type: object
-      required: [id, broker_id, name, stage, created_at, updated_at]
+      required: [id, broker_id, name, phone, email, source, interest, next_action, stage, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         broker_id: { type: string, format: uuid }
-        name: { type: string }
-        phone: { type: [string, 'null'] }
+        name: { type: string, minLength: 2, maxLength: 160 }
+        phone: { type: [string, 'null'], maxLength: 40 }
         email: { type: [string, 'null'], format: email }
-        source: { type: [string, 'null'] }
+        source: { type: [string, 'null'], maxLength: 80 }
+        interest: { type: [string, 'null'], maxLength: 160 }
+        next_action: { type: [string, 'null'], maxLength: 200 }
         stage: { $ref: '#/components/schemas/LeadStage' }
-        interest: { type: [string, 'null'] }
-        next_action: { type: [string, 'null'] }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     CreateLeadRequest:
@@ -592,6 +457,46 @@ components:
       properties:
         items: { type: array, items: { $ref: '#/components/schemas/Lead' } }
         page: { $ref: '#/components/schemas/PageInfo' }
+    CreateConversationRequest:
+      type: object
+      required: [lead_id]
+      properties:
+        lead_id: { type: string, format: uuid }
+        title: { type: string, maxLength: 160 }
+    Conversation:
+      type: object
+      required: [id, broker_id, lead_id, status, last_message_at, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        broker_id: { type: string, format: uuid }
+        lead_id: { type: string, format: uuid }
+        status: { type: string, enum: [open, waiting, closed, archived] }
+        last_message_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ConversationPage:
+      type: object
+      required: [items, page]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Conversation' } }
+        page: { $ref: '#/components/schemas/PageInfo' }
+    Message:
+      type: object
+      required: [id, conversation_id, direction, author, status, content, occurred_at]
+      properties:
+        id: { type: string, format: uuid }
+        conversation_id: { type: string, format: uuid }
+        direction: { type: string, enum: [inbound, outbound] }
+        author: { type: string, enum: [lead, broker, agent, system] }
+        status: { type: string, enum: [received, processing, draft, failed] }
+        content: { type: string, minLength: 1, maxLength: 12000 }
+        occurred_at: { type: string, format: date-time }
+    MessagePage:
+      type: object
+      required: [items, page]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/Message' } }
+        page: { $ref: '#/components/schemas/PageInfo' }
     Agent:
       type: object
       required: [id, name, description, status, capabilities]
@@ -609,9 +514,45 @@ components:
         lead_id: { type: [string, 'null'], format: uuid }
         conversation_id: { type: [string, 'null'], format: uuid }
         title: { type: [string, 'null'], maxLength: 160 }
+    AgentMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string, minLength: 1, maxLength: 12000 }
+        client_message_id: { type: string, maxLength: 128 }
+    AgentResult:
+      type: object
+      required: [type, content, citations, proposed_actions, requires_approval, status, request_id]
+      properties:
+        type: { type: string, enum: [draft, error] }
+        content: { type: string }
+        citations: { type: array, items: { type: string } }
+        proposed_actions: { type: array, maxItems: 0, items: {} }
+        requires_approval: { type: boolean, const: false }
+        status: { type: string, enum: [completed, failed, cancelled] }
+        request_id: { type: string }
+    AgentRun:
+      type: object
+      required: [run_id, session_id, status, input_content, result, error_code, created_at, updated_at]
+      properties:
+        run_id: { type: string }
+        session_id: { type: string }
+        status: { type: string, enum: [queued, running, completed, failed, cancelled] }
+        input_content: { type: string }
+        result: { oneOf: [{ $ref: '#/components/schemas/AgentResult' }, { type: 'null' }] }
+        error_code: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    AgentRunAccepted:
+      type: object
+      required: [run_id, session_id, status]
+      properties:
+        run_id: { type: string }
+        session_id: { type: string }
+        status: { type: string, enum: [queued, running] }
     AgentSession:
       type: object
-      required: [id, agent_id, status, created_at]
+      required: [id, agent_id, lead_id, conversation_id, title, status, runs, created_at, updated_at]
       properties:
         id: { type: string, format: uuid }
         agent_id: { type: string }
@@ -619,82 +560,43 @@ components:
         conversation_id: { type: [string, 'null'], format: uuid }
         title: { type: string }
         status: { type: string, enum: [active, stopped, completed, failed] }
+        runs: { type: array, items: { $ref: '#/components/schemas/AgentRun' } }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
-    AgentMessageRequest:
+    PersistedAgentEvent:
       type: object
-      required: [content]
+      required: [id, run_id, session_id, workspace_id, broker_id, sequence, type, payload, request_id, occurred_at]
       properties:
-        content: { type: string, minLength: 1, maxLength: 12000 }
-        client_message_id: { type: string, maxLength: 128 }
-    AgentRun:
-      type: object
-      required: [run_id, session_id, status]
-      properties:
-        run_id: { type: string, format: uuid }
-        session_id: { type: string, format: uuid }
-        status: { type: string, enum: [queued, running] }
-    Message:
-      type: object
-      required: [id, conversation_id, direction, author, status, content, occurred_at]
-      properties:
-        id: { type: string, format: uuid }
-        conversation_id: { type: string, format: uuid }
-        direction: { type: string, enum: [inbound, outbound] }
-        author: { type: string, enum: [lead, broker, agent, system] }
-        status: { type: string, enum: [received, processing, draft, pending_approval, approved, sending, sent, failed, cancelled] }
-        content: { type: string }
+        id: { type: string }
+        run_id: { type: string }
+        session_id: { type: string }
+        workspace_id: { type: string }
+        broker_id: { type: string }
+        sequence: { type: integer, minimum: 1 }
+        type: { type: string }
+        payload: { type: object, additionalProperties: true }
+        request_id: { type: string }
         occurred_at: { type: string, format: date-time }
-    MessagePage:
+    AgentEvent:
       type: object
-      required: [items, page]
+      required: [id, run_id, session_id, workspace_id, broker_id, sequence, type, data, request_id, occurred_at]
       properties:
-        items: { type: array, items: { $ref: '#/components/schemas/Message' } }
-        page: { $ref: '#/components/schemas/PageInfo' }
-    Conversation:
-      type: object
-      required: [id, broker_id, lead_id, status, created_at, updated_at]
-      properties:
-        id: { type: string, format: uuid }
-        broker_id: { type: string, format: uuid }
-        lead_id: { type: string, format: uuid }
-        status: { type: string, enum: [open, waiting, closed, archived] }
-        last_message_at: { type: [string, 'null'], format: date-time }
-        created_at: { type: string, format: date-time }
-        updated_at: { type: string, format: date-time }
-    ConversationPage:
-      type: object
-      required: [items, page]
-      properties:
-        items: { type: array, items: { $ref: '#/components/schemas/Conversation' } }
-        page: { $ref: '#/components/schemas/PageInfo' }
-    OutboxStatus:
-      type: object
-      required: [id, status]
-      properties:
-        id: { type: string, format: uuid }
-        status: { type: string, enum: [pending, approved, sending, sent, failed, cancelled] }
-    HermesStatus:
-      type: object
-      required: [profile_id, status, whatsapp_status]
-      properties:
-        profile_id: { type: string, format: uuid }
-        status: { type: string, enum: [provisioning, pairing, connected, degraded, stopped] }
-        whatsapp_status: { type: string, enum: [pending, connected, disconnected, revoked] }
-        phone_number_masked: { type: [string, 'null'] }
-        last_connected_at: { type: [string, 'null'], format: date-time }
-    PairingState:
-      type: object
-      required: [status]
-      properties:
-        status: { type: string, enum: [pairing, connected, failed] }
-        qr_code: { type: [string, 'null'], description: QR temporário; nunca persistir em logs. }
-        expires_at: { type: [string, 'null'], format: date-time }
-    DashboardSummary:
-      type: object
-      required: [leads, in_service, scheduled_visits, conversion_rate]
-      properties:
-        leads: { type: integer, minimum: 0 }
-        in_service: { type: integer, minimum: 0 }
-        scheduled_visits: { type: integer, minimum: 0 }
-        conversion_rate: { type: number, minimum: 0, maximum: 1 }
+        id: { type: string }
+        run_id: { type: string }
+        session_id: { type: string }
+        workspace_id: { type: string }
+        broker_id: { type: string }
+        sequence: { type: integer, minimum: 1 }
+        type: { type: string }
+        data: { type: object, additionalProperties: true }
+        request_id: { type: string }
+        occurred_at: { type: string, format: date-time }
+
+x-error-codes:
+  - WORKSPACE_CONTEXT_REQUIRED
+  - CSRF_ORIGIN_REQUIRED
+  - CSRF_ORIGIN_INVALID
+  - IDEMPOTENCY_KEY_REUSED
+  - EVENT_REPLAY_UNAVAILABLE
+  - INVALID_EVENT_CURSOR
+  - HERMES_PROFILE_UNAVAILABLE

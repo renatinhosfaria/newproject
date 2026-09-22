@@ -1,5 +1,10 @@
 # Especificação do schema do banco
 
+> **Ciclo preparatório atual:** as migrations desta entrega cobrirão workspace,
+> memberships, sessão, leads, conversas, mensagens, Agent sessions/runs/events,
+> catálogo de capacidades, idempotência e auditoria. Hermes profiles,
+> WhatsApp e outbox são roadmap.
+
 Este documento transforma o modelo conceitual em um contrato para migrations. A implementação deve usar PostgreSQL e `timestamptz` em UTC. A migration é a fonte de verdade do schema; este documento explica as invariantes que a migration deve preservar.
 
 ## Identificadores e convenções
@@ -46,7 +51,7 @@ O banco deve possuir uma fronteira explícita de workspace, mesmo que o MVP come
 | `id` | uuid | PK |
 | `workspace_id` | uuid | FK para `workspaces` |
 | `user_id` | uuid | FK para `users` |
-| `role` | enum | `broker`, `supervisor` ou `admin` |
+| `role` | enum | `broker` ou `supervisor` |
 | `status` | enum | `invited`, `active` ou `suspended` |
 | `created_at` | timestamptz | obrigatório |
 | `updated_at` | timestamptz | obrigatório |
@@ -83,7 +88,7 @@ Restrições: `unique(workspace_id, user_id)` e no máximo uma membership ativa 
 
 Índices: `user_id`, `workspace_id`, `expires_at` e `token_hash`. Sessões expiradas devem ser removidas por job seguro.
 
-## Integração Hermes e WhatsApp
+## Integração Hermes e WhatsApp (roadmap)
 
 ### `hermes_profiles`
 
@@ -133,7 +138,7 @@ Campos: `id`, `workspace_id`, `broker_id`, `user_id`, `agent_id`, `hermes_sessio
 
 Restrições: o usuário, lead e conversa precisam estar no escopo do broker; `hermes_session_id` não é exposto como identificador de autorização.
 
-### `outbox_messages`
+### `outbox_messages` (roadmap)
 
 Campos: `id`, `workspace_id`, `broker_id`, `conversation_id`, `message_id`, `idempotency_key`, `status`, `attempt_count`, `next_attempt_at`, `last_error_code`, `created_at`, `updated_at`.
 
@@ -171,7 +176,7 @@ As tabelas abaixo não bloqueiam o primeiro vertical slice e devem entrar quando
 1. criar `workspaces`, `users`, memberships e sessões;
 2. criar brokers e perfil Hermes;
 3. criar leads, conversas e mensagens;
-4. criar outbox e auditoria;
+4. criar auditoria; outbox só entra no ciclo de integração;
 5. adicionar índices e constraints depois das tabelas-base;
 6. cada migration deve ser reversível quando a operação for segura;
 7. seeds de desenvolvimento nunca podem conter credenciais reais;

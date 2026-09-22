@@ -1,5 +1,9 @@
 # Matriz de autorização
 
+> No ciclo atual, `workspace_memberships` é a fonte única de papel e contém
+> somente `broker` e `supervisor`. `admin`, `hermes_service`, aprovação/envio,
+> pairing e perfil Hermes pertencem ao roadmap.
+
 Esta matriz define a autorização mínima do MVP. O padrão é **negar**; uma ação só é permitida quando a sessão, o papel, o workspace e o recurso passam por todas as verificações.
 
 ## Papéis
@@ -8,8 +12,8 @@ Esta matriz define a autorização mínima do MVP. O padrão é **negar**; uma a
 |---|---|
 | `broker` | próprio perfil operacional, leads, conversas, Agents e arquivos autorizados |
 | `supervisor` | gestão da equipe e visão permitida dos corretores do workspace |
-| `admin` | administração do workspace e manutenção operacional, com auditoria |
-| `hermes_service` | serviço interno com escopo de broker fornecido pelo Orchestrator |
+| `admin` | roadmap, fora das rotas atuais |
+| `hermes_service` | roadmap, fora das rotas atuais |
 
 ## Matriz principal
 

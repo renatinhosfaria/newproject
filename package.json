@@ -1,0 +1,32 @@
+{
+  "name": "pacaembu-crm",
+  "private": true,
+  "type": "module",
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.27.1",
+  "engines": {
+    "node": ">=24.0.0 <25",
+    "pnpm": ">=11.27.1 <12"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:contract": "vitest run tests/contracts",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run --project integration",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint packages tests vitest.config.ts",
+    "format:check": "prettier --check packages tests package.json pnpm-workspace.yaml tsconfig.json vitest.config.ts"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "13.1.0",
+    "@types/js-yaml": "4.0.9",
+    "@types/node": "24.10.1",
+    "@typescript-eslint/parser": "8.70.1",
+    "eslint": "9.39.5",
+    "prettier": "3.9.0",
+    "typescript": "5.9.3",
+    "vitest": "4.0.14",
+    "yaml": "2.9.1",
+    "zod": "3.25.76"
+  }
+}

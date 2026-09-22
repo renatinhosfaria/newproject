@@ -1,32 +1,35 @@
-# ADR 002 — Stack tecnológica do MVP
+# ADR 002 — Stack tecnológica do ciclo preparatório
 
-- **Status:** proposta recomendada
+- **Status:** adotada para o ciclo preparatório; runtime Hermes e MVP completo são roadmap
 - **Data:** 2026-09-22
 - **Escopo:** fundação do CRM, API, banco, filas e frontend
 
 ## Contexto
 
-O projeto precisa sair de uma documentação conceitual para uma implementação de MVP que possa operar com um corretor, evoluir para 15–20 corretores e manter o Hermes como runtime separado. A equipe precisa compartilhar contratos de tipos, autorização e eventos sem transformar o MVP em um conjunto de microserviços difícil de operar.
+O projeto precisa sair da documentação conceitual para contratos executáveis
+sem antecipar a operação Hermes. O ciclo atual prepara workspace, schemas,
+OpenAPI, eventos e runner de testes; a integração real poderá evoluir depois.
 
 ## Decisão recomendada
 
-Usar um monorepo TypeScript com contratos compartilhados e serviços separados por responsabilidade:
+Usar um workspace pnpm TypeScript com contratos compartilhados e serviços
+consumidores adicionados nas próximas tarefas:
 
 | Camada | Escolha recomendada | Responsabilidade |
 |---|---|---|
 | Workspace | `pnpm` workspaces | Dependências e scripts do monorepo |
-| CRM Web | Next.js + React + TypeScript | Interface autenticada, módulos do CRM e área de Agents |
+| CRM Web | Next.js + React + TypeScript | Roadmap após os contratos |
 | Estilos | CSS variables + CSS Modules | Implementar os tokens e regras de `DESIGN.md` |
-| CRM API | NestJS com adapter Fastify | REST, SSE, autorização, domínio e auditoria |
+| CRM API | NestJS com adapter Fastify | Roadmap após os contratos |
 | Validação | Zod e schemas compartilhados | Validar entrada, saída e eventos |
-| Banco | PostgreSQL | Fonte de verdade dos dados do CRM |
+| Banco | PostgreSQL | Roadmap; contratos de persistência já definidos |
 | Acesso ao banco | Drizzle ORM e migrations SQL | Consultas tipadas e controle explícito do schema |
 | Fila e locks | Redis + BullMQ | Outbox, reconexão, jobs e idempotência |
 | Arquivos | MinIO compatível com S3 | Documentos, imagens, vídeos e artefatos |
-| Hermes | Runtime separado por corretor | Agents, perfil e bridge WhatsApp |
+| Hermes | Mock adapter no ciclo; runtime separado depois | Agents draft-only |
 | Eventos do Agent | SSE no CRM; HTTP interno no Orchestrator | Streaming de progresso e resposta |
 | Testes | Vitest, Supertest, Playwright e k6 | Unitário, API, E2E e carga |
-| Operação | Docker Compose no MVP | Ambiente local, staging e primeiro VPS |
+| Runner | Vitest + TypeScript + YAML/OpenAPI + Zod | Contratos e testes desta entrega |
 
 O CRM API não deve importar código interno do Hermes. A comunicação ocorrerá pelo adapter do Orchestrator, protegido por rede interna e credenciais próprias.
 

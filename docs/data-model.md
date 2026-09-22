@@ -1,5 +1,9 @@
 # Modelo de dados inicial
 
+> **Ciclo preparatório:** este documento distingue o schema executado agora do
+> roadmap. O ciclo usa workspace e memberships; Hermes/WhatsApp e outbox ficam
+> para a integração posterior.
+
 Este modelo representa o MVP e deve ser refinado durante a implementação. Todas as entidades que contêm dados de negócio precisam carregar o escopo do corretor diretamente ou por relacionamento validado no servidor.
 
 ## Entidades principais
@@ -15,11 +19,24 @@ id
 name
 email
 password_hash ou identity_provider_id
-role: broker | supervisor | admin
 status: active | suspended | invited
 created_at
 updated_at
 ```
+
+### `workspace_memberships` (ciclo atual)
+
+```text
+id
+workspace_id
+user_id
+role: broker | supervisor
+status: active | suspended | invited
+created_at
+updated_at
+```
+
+O papel nunca é lido de `users` nem aceito de inputs do navegador.
 
 ### `brokers`
 
@@ -35,7 +52,7 @@ created_at
 updated_at
 ```
 
-### `hermes_profiles`
+### `hermes_profiles` (roadmap)
 
 Relaciona um corretor ao runtime Hermes correspondente.
 
@@ -54,7 +71,7 @@ updated_at
 
 As credenciais não devem ser armazenadas em texto puro nessa tabela. `api_key_reference` aponta para o mecanismo de segredos.
 
-### `whatsapp_connections`
+### `whatsapp_connections` (roadmap)
 
 Estado da conexão do número do corretor.
 
@@ -115,7 +132,7 @@ broker_id
 external_message_id
 direction: inbound | outbound
 author: lead | broker | agent | system
-status: received | draft | pending_approval | approved | sent | failed | cancelled
+status: received | processing | draft | failed
 content
 metadata_json
 occurred_at
@@ -139,7 +156,7 @@ created_at
 updated_at
 ```
 
-### `outbox_messages`
+### `outbox_messages` (roadmap)
 
 Fila de mensagens que podem ser enviadas pelo WhatsApp.
 
@@ -157,7 +174,7 @@ created_at
 updated_at
 ```
 
-### `audit_events`
+### `audit_events` (ciclo atual)
 
 Registro imutável das ações relevantes.
 
