@@ -14,7 +14,7 @@
 - O hash inclui `operation` concreta e DTO validado canonico. Headers/cookies ficam fora.
 - Antes de qualquer replay, a transacao seta contexto RLS e revalida usuario, workspace, membership e broker ativos.
 - Replay preserva `status`, corpo e `request_id` originalmente persistidos.
-- Corpo diferente com mesma `(workspace_id,user_id,operation,key)` retorna `409 IDEMPOTENCY_CONFLICT`.
+- Corpo diferente com mesma `(workspace_id,user_id,operation,key)` retorna `409 IDEMPOTENCY_KEY_REUSED`.
 - Falha dentro do callback faz rollback do efeito local e nao grava resposta de sucesso.
 - TTL usa `Clock` injetado, com `expires_at = now + 24h`; `db:maintenance` remove registros expirados.
 - Migration `0009_idempotency_rls.sql` habilita RLS em `idempotency_records` e concede `DELETE` minimo para expiracao sob a role da API, preservando audit append-only.

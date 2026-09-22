@@ -57,7 +57,7 @@ export class IdempotencyService {
       const row = existing.rows[0] as unknown as StoredRecord | undefined;
       if (row) {
         if (row.request_hash !== requestHash)
-          throw problem(409, "IDEMPOTENCY_CONFLICT");
+          throw problem(409, "IDEMPOTENCY_KEY_REUSED");
         return {
           status: row.response_status,
           body: row.response_body as T,

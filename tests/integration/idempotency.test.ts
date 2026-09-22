@@ -122,7 +122,7 @@ describe("IdempotencyService", () => {
         { lead_id: leadId, title: "corpo diferente" },
         createConversationFor(context, leadId),
       ),
-    ).rejects.toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    ).rejects.toMatchObject({ status: 409, code: "IDEMPOTENCY_KEY_REUSED" });
     const persisted = await h.pool.query(
       "SELECT count(*)::int AS n FROM conversations WHERE lead_id=$1",
       [leadId],
