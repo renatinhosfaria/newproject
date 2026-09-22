@@ -81,7 +81,9 @@ export class AuthService {
     } else if (memberships.length === 1) {
       membership = memberships[0];
     } else {
-      throw problem(409, "WORKSPACE_CONTEXT_REQUIRED");
+      const error = problem(409, "WORKSPACE_CONTEXT_REQUIRED");
+      error.options = memberships.map(({ workspace_id }) => ({ workspace_id }));
+      throw error;
     }
     if (
       membership.role === "broker" &&

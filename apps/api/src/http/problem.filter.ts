@@ -10,6 +10,7 @@ export interface ProblemBody {
   detail?: string;
   request_id: string;
   retryable: boolean;
+  options?: Array<{ workspace_id: string }>;
 }
 
 export class ProblemError extends Error {
@@ -18,6 +19,7 @@ export class ProblemError extends Error {
   readonly detail?: string;
   readonly retryable: boolean;
   requestId?: string;
+  options?: Array<{ workspace_id: string }>;
 
   constructor(
     status: number,
@@ -79,6 +81,7 @@ export class ProblemFilter implements ExceptionFilter {
       ...(error?.detail ? { detail: error.detail } : {}),
       request_id: error?.requestId ?? requestId,
       retryable: error?.retryable ?? false,
+      ...(error?.options ? { options: error.options } : {}),
     };
     response.status(status);
     const retryAfter =
