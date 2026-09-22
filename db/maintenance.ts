@@ -18,7 +18,7 @@ export async function maintenance(
       WHERE e.run_id = r.run_id
         AND r.status IN ('completed', 'failed', 'cancelled')
         AND r.events_expire_at IS NOT NULL
-        AND r.events_expire_at < $1
+        AND r.events_expire_at <= $1
     `,
     [now],
   );

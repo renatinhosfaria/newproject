@@ -9,7 +9,16 @@ import { RunExecutor } from "./run-executor.js";
 import { Tools } from "./tools.js";
 import { MockHermesAdapter } from "./mock-hermes.adapter.js";
 import { HERMES, EXECUTOR_ENABLED, type HermesPort } from "./hermes.port.js";
+import { EventsController } from "./events.controller.js";
+import { EventStore } from "./event-store.js";
+import {
+  SseStreams,
+  SSE_SCHEDULER,
+  systemSseScheduler,
+  type SseScheduler,
+} from "./sse.js";
 export interface AgentDependencies {
+  sseScheduler?: SseScheduler;
   hermesFactory?: (tools: Tools) => HermesPort;
   startExecutor?: boolean;
 }
@@ -23,12 +32,18 @@ export class AgentsModule {
     return {
       module: AgentsModule,
       imports: [CrmModule.forRoot(config, clock)],
-      controllers: [AgentsController],
+      controllers: [AgentsController, EventsController],
       providers: [
         AuditService,
         AgentsService,
         Tools,
         RunExecutor,
+        EventStore,
+        SseStreams,
+        {
+          provide: SSE_SCHEDULER,
+          useValue: deps.sseScheduler ?? systemSseScheduler,
+        },
         {
           provide: HERMES,
           useFactory:

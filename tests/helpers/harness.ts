@@ -1,4 +1,5 @@
 import pg from "pg";
+import type { SseScheduler } from "../../apps/api/src/agents/sse.js";
 import { controlledAdapter, type MockScenario } from "./agent-adapter.js";
 import { randomUUID } from "node:crypto";
 import type { ApiConfig } from "../../apps/api/src/app.js";
@@ -43,6 +44,7 @@ export async function createHarness(
   config: Omit<ApiConfig, "databaseUrl"> & {
     mockScenario?: MockScenario;
     executorPaused?: boolean;
+    sseScheduler?: SseScheduler;
   } = {},
 ): Promise<TestHarness> {
   const appUrl = process.env.DATABASE_URL_TEST;
@@ -79,6 +81,7 @@ export async function createHarness(
   const createTestApp = async () =>
     createApp(appConfig, {
       clock,
+      sseScheduler: config.sseScheduler,
       startExecutor: !config.executorPaused,
       hermesFactory: (tools) =>
         controlledAdapter(tools, config.mockScenario, (release) => {
