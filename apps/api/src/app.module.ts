@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
-import { HealthController, CLOCK } from "./http/health.controller.js";
-import { SystemClock } from "./clock.js";
+import { HealthController } from "./http/health.controller.js";
+import { AuthModule } from "./auth/auth.module.js";
 
 @Module({
+  imports: [AuthModule],
   controllers: [HealthController],
-  providers: [{ provide: CLOCK, useClass: SystemClock }],
 })
 export class AppModule {}

@@ -9,6 +9,7 @@
     "@nestjs/common": "11.1.6",
     "@nestjs/core": "11.1.6",
     "@nestjs/platform-fastify": "11.1.6",
+    "@pacaembu/contracts": "workspace:*",
     "argon2": "0.44.0",
     "drizzle-orm": "0.44.5",
     "fastify": "5.6.1",

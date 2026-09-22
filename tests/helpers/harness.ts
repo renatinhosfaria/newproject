@@ -6,6 +6,8 @@ import { schema } from "../../apps/api/src/db/schema.js";
 import type { Db } from "../../apps/api/src/db/client.js";
 import { ManualClock } from "./clock.js";
 import type { Fixture, Fixtures } from "./fixtures.js";
+import { createApp } from "../../apps/api/src/app.js";
+import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 
 export interface TestHarness {
   db: Db;
@@ -13,6 +15,8 @@ export interface TestHarness {
   ownerPool: pg.Pool;
   fixtures: Fixtures;
   clock: ManualClock;
+  app: NestFastifyApplication;
+  http: TestHttpClient;
   seedAgain(): Promise<void>;
   close(): Promise<void>;
 }
@@ -52,14 +56,22 @@ export async function createHarness(): Promise<TestHarness> {
       fixtures.brokerA.brokerId,
     ]);
     const clock = new ManualClock();
+    process.env.DATABASE_URL = ownerUrl;
+    const app = await createApp(
+      { nodeEnv: "test", allowedOrigin: "http://localhost:3000" },
+      { clock },
+    );
     return {
       db,
       pool,
       ownerPool,
       fixtures,
       clock,
+      app,
+      http: new TestHttpClient(app),
       seedAgain: () => seed(db, credentials),
       close: async () => {
+        await app.close();
         await pool.end();
         await ownerPool.end();
       },
@@ -68,6 +80,68 @@ export async function createHarness(): Promise<TestHarness> {
     await pool.end();
     await ownerPool.end();
     throw error;
+  }
+}
+
+export interface TestHttpResponse {
+  status: number;
+  body: any;
+  headers: Record<string, string | string[] | number | undefined>;
+}
+
+class TestHttpRequest implements PromiseLike<TestHttpResponse> {
+  private readonly headers: Record<string, string> = {};
+  private payload: unknown;
+  constructor(
+    private readonly app: NestFastifyApplication,
+    private readonly method: string,
+    private readonly url: string,
+  ) {}
+  set(name: string, value: string): this {
+    this.headers[name] = value;
+    return this;
+  }
+  send(payload?: unknown): this {
+    this.payload = payload;
+    return this;
+  }
+  async execute(): Promise<TestHttpResponse> {
+    const response = await this.app.inject({
+      method: this.method as any,
+      url: this.url,
+      headers: this.headers,
+      payload: this.payload as any,
+    });
+    let body: any = response.body;
+    try {
+      body = response.json();
+    } catch {
+      /* Empty responses remain strings. */
+    }
+    return { status: response.statusCode, body, headers: response.headers };
+  }
+  then<TResult1 = TestHttpResponse, TResult2 = never>(
+    onfulfilled?:
+      ((value: TestHttpResponse) => TResult1 | PromiseLike<TResult1>) | null,
+    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null,
+  ): PromiseLike<TResult1 | TResult2> {
+    return this.execute().then(onfulfilled, onrejected);
+  }
+}
+
+export class TestHttpClient {
+  constructor(private readonly app: NestFastifyApplication) {}
+  get(url: string): TestHttpRequest {
+    return new TestHttpRequest(this.app, "GET", url);
+  }
+  post(url: string): TestHttpRequest {
+    return new TestHttpRequest(this.app, "POST", url);
+  }
+  patch(url: string): TestHttpRequest {
+    return new TestHttpRequest(this.app, "PATCH", url);
+  }
+  delete(url: string): TestHttpRequest {
+    return new TestHttpRequest(this.app, "DELETE", url);
   }
 }
 
@@ -261,6 +335,8 @@ async function readFixture(
     membershipId: row.membership_id,
     brokerId: row.broker_id,
     email,
-    password: "test-broker-password",
+    password: email.startsWith("supervisor")
+      ? "test-supervisor-password"
+      : "test-broker-password",
   };
 }
