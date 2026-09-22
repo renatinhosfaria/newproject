@@ -498,9 +498,15 @@ describe("durable agent HTTP", () => {
     ]);
     expect(JSON.stringify(scopes.rows)).not.toContain("privado-sintetico");
     const sessions = await h.ownerPool.query(
-      "SELECT 1 FROM pg_stat_activity WHERE usename='pacaembu_app' AND state='idle in transaction'",
+      "SELECT 1 FROM pg_stat_activity WHERE usename='pacaembu_app' AND state='idle in transaction' AND application_name=$1",
+      [h.applicationName],
     );
     expect(sessions.rowCount).toBe(0);
+    const harnessSessions = await h.ownerPool.query(
+      "SELECT 1 FROM pg_stat_activity WHERE usename='pacaembu_app' AND application_name=$1",
+      [h.applicationName],
+    );
+    expect(harnessSessions.rowCount).toBeGreaterThan(0);
     const leak = await h.pool.query(
       "SELECT set_config('app.broker_id',$1,false)",
       [h.fixtures.brokerB.brokerId],

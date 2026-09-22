@@ -18,6 +18,8 @@ export interface TestHarness {
   db: Db;
   pool: pg.Pool;
   ownerPool: pg.Pool;
+  /** application_name exclusivo das conexões deste harness (pool, ownerPool e API). */
+  applicationName: string;
   fixtures: Fixtures;
   clock: ManualClock;
   app: NestFastifyApplication;
@@ -64,6 +66,7 @@ export async function createHarness(
   const scopedUrl = (url: string) => {
     const scoped = new URL(url);
     scoped.searchParams.set("options", `-csearch_path=${schemaName},pg_temp`);
+    scoped.searchParams.set("application_name", schemaName);
     return scoped.toString();
   };
   const ownerPool = new pg.Pool({ connectionString: scopedUrl(ownerUrl) });
@@ -127,6 +130,7 @@ export async function createHarness(
       db: drizzle(pool, { schema }),
       pool,
       ownerPool,
+      applicationName: schemaName,
       fixtures,
       clock,
       get app() {
