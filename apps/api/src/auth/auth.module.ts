@@ -3,6 +3,7 @@ import {
   Injectable,
   Module,
   type OnModuleDestroy,
+  type DynamicModule,
 } from "@nestjs/common";
 import type pg from "pg";
 import { AuthController } from "./auth.controller.js";
@@ -15,6 +16,7 @@ import { createDb, createPool } from "../db/client.js";
 import { CLOCK } from "../http/health.controller.js";
 
 const POOL = Symbol("POOL");
+const DATABASE_URL = Symbol("DATABASE_URL");
 
 @Injectable()
 class PoolLifecycle implements OnModuleDestroy {
@@ -27,7 +29,12 @@ class PoolLifecycle implements OnModuleDestroy {
 @Module({
   controllers: [AuthController],
   providers: [
-    { provide: POOL, useFactory: () => createPool() },
+    {
+      provide: POOL,
+      useFactory: (url: string) => createPool(url),
+      inject: [DATABASE_URL],
+    },
+    { provide: DATABASE_URL, useFactory: () => process.env.DATABASE_URL },
     {
       provide: DB,
       useFactory: (dbPool: pg.Pool) => createDb(dbPool),
@@ -54,4 +61,13 @@ class PoolLifecycle implements OnModuleDestroy {
   ],
   exports: [AuthService, SessionGuard, DB, CLOCK],
 })
-export class AuthModule {}
+export class AuthModule {
+  static forRoot(databaseUrl?: string): DynamicModule {
+    return {
+      module: AuthModule,
+      providers: databaseUrl
+        ? [{ provide: DATABASE_URL, useValue: databaseUrl }]
+        : [],
+    };
+  }
+}

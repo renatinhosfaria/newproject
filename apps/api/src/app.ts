@@ -14,6 +14,7 @@ import { CsrfInterceptor } from "./auth/csrf.js";
 export interface ApiConfig {
   nodeEnv?: string;
   allowedOrigin?: string;
+  databaseUrl?: string;
 }
 
 export async function createApp(
@@ -23,7 +24,7 @@ export async function createApp(
   if (config.nodeEnv) process.env.NODE_ENV = config.nodeEnv;
   if (config.allowedOrigin) process.env.APP_ORIGIN = config.allowedOrigin;
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule,
+    AppModule.forRoot(config.databaseUrl),
     new FastifyAdapter(),
     { bufferLogs: true },
   );

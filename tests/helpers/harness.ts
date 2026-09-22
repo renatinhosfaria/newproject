@@ -28,6 +28,22 @@ const credentials: DevCredentials = {
   brokerPassword: "test-broker-password",
 };
 
+// Vitest runs integration files concurrently against the same isolated
+// database. Serialize migration/role setup so PostgreSQL does not race on
+// system catalog rows (the application requests themselves remain parallel).
+let setupQueue: Promise<void> = Promise.resolve();
+
+async function acquireSetup(): Promise<() => void> {
+  let release!: () => void;
+  const turn = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const previous = setupQueue;
+  setupQueue = setupQueue.then(() => turn);
+  await previous;
+  return release;
+}
+
 export async function createHarness(): Promise<TestHarness> {
   const appUrl = process.env.DATABASE_URL_TEST;
   const ownerUrl = process.env.DATABASE_URL_TEST_OWNER;
@@ -43,6 +59,7 @@ export async function createHarness(): Promise<TestHarness> {
   }
   const ownerPool = new pg.Pool({ connectionString: ownerUrl });
   const pool = new pg.Pool({ connectionString: appUrl, max: 1 });
+  const releaseSetup = await acquireSetup();
   try {
     await migrate(ownerPool);
     await grantAppRole(ownerPool);
@@ -56,11 +73,15 @@ export async function createHarness(): Promise<TestHarness> {
       fixtures.brokerA.brokerId,
     ]);
     const clock = new ManualClock();
-    process.env.DATABASE_URL = ownerUrl;
     const app = await createApp(
-      { nodeEnv: "test", allowedOrigin: "http://localhost:3000" },
+      {
+        nodeEnv: "test",
+        allowedOrigin: "http://localhost:3000",
+        databaseUrl: appUrl,
+      },
       { clock },
     );
+    releaseSetup();
     return {
       db,
       pool,
@@ -77,6 +98,7 @@ export async function createHarness(): Promise<TestHarness> {
       },
     };
   } catch (error) {
+    releaseSetup();
     await pool.end();
     await ownerPool.end();
     throw error;
@@ -146,14 +168,27 @@ export class TestHttpClient {
 }
 
 async function grantAppRole(pool: pg.Pool): Promise<void> {
-  await pool.query("GRANT USAGE ON SCHEMA public TO pacaembu_app");
-  await pool.query(
-    "GRANT SELECT, INSERT ON workspaces, users, workspace_memberships, auth_sessions, brokers, leads, conversations, messages, agents, agent_capabilities, workspace_agents, agent_sessions, agent_runs, agent_events, idempotency_records, audit_events TO pacaembu_app",
-  );
-  await pool.query(
-    "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO pacaembu_app",
-  );
-  await pool.query("REVOKE UPDATE, DELETE ON audit_events FROM pacaembu_app");
+  const client = await pool.connect();
+  try {
+    // Vitest workers are separate processes, so the in-process setup queue is
+    // insufficient for catalog writes. A database advisory lock serializes
+    // role grants across workers without affecting application requests.
+    await client.query("SELECT pg_advisory_lock(284731)");
+    await client.query("GRANT USAGE ON SCHEMA public TO pacaembu_app");
+    await client.query(
+      "GRANT SELECT, INSERT ON workspaces, users, workspace_memberships, auth_sessions, brokers, leads, conversations, messages, agents, agent_capabilities, workspace_agents, agent_sessions, agent_runs, agent_events, idempotency_records, audit_events TO pacaembu_app",
+    );
+    await client.query("GRANT UPDATE ON auth_sessions TO pacaembu_app");
+    await client.query(
+      "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO pacaembu_app",
+    );
+    await client.query(
+      "REVOKE UPDATE, DELETE ON audit_events FROM pacaembu_app",
+    );
+    await client.query("SELECT pg_advisory_unlock(284731)");
+  } finally {
+    client.release();
+  }
 }
 
 async function installFixtures(pool: pg.Pool): Promise<Fixtures> {

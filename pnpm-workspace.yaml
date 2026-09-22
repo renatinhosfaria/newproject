@@ -13,4 +13,6 @@ minimumReleaseAgeExclude:
   - "@typescript-eslint/typescript-estree@8.70.1"
   - "@typescript-eslint/visitor-keys@8.70.1"
 allowBuilds:
+  "@nestjs/core": true
+  argon2: true
   esbuild: true

@@ -1,9 +1,18 @@
 import { Module } from "@nestjs/common";
 import { HealthController } from "./http/health.controller.js";
 import { AuthModule } from "./auth/auth.module.js";
+import type { DynamicModule } from "@nestjs/common";
 
 @Module({
-  imports: [AuthModule],
+  imports: [],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule {
+  static forRoot(databaseUrl?: string): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [AuthModule.forRoot(databaseUrl)],
+      controllers: [HealthController],
+    };
+  }
+}

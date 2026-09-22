@@ -64,7 +64,7 @@ export class AuthService {
         b.id AS broker_id, b.status AS broker_status
       FROM workspace_memberships wm
       JOIN workspaces w ON w.id = wm.workspace_id
-      LEFT JOIN brokers b ON b.workspace_id = wm.workspace_id AND b.user_id = wm.user_id
+      LEFT JOIN LATERAL auth_broker_for_user(wm.user_id, wm.workspace_id) b ON true
       WHERE wm.user_id = ${user.id} AND wm.status = 'active' AND w.status = 'active'
       ORDER BY wm.workspace_id
     `);
@@ -131,7 +131,7 @@ export class AuthService {
       JOIN users u ON u.id = s.user_id
       JOIN workspace_memberships wm ON wm.id = s.membership_id AND wm.workspace_id = s.workspace_id AND wm.user_id = s.user_id
       JOIN workspaces w ON w.id = s.workspace_id
-      LEFT JOIN brokers b ON b.workspace_id = s.workspace_id AND b.user_id = s.user_id
+      LEFT JOIN LATERAL auth_broker_for_user(s.user_id, s.workspace_id) b ON true
       WHERE s.token_hash = ${tokenHash}
       LIMIT 1
     `);
@@ -216,7 +216,7 @@ export class AuthService {
       const result = await this.db.execute(sql`
         SELECT wm.workspace_id, wm.role, b.id AS broker_id
         FROM workspace_memberships wm
-        LEFT JOIN brokers b ON b.workspace_id = wm.workspace_id AND b.user_id = wm.user_id
+        LEFT JOIN LATERAL auth_broker_for_user(wm.user_id, wm.workspace_id) b ON true
         WHERE wm.user_id = ${userId}
         ORDER BY wm.workspace_id
         LIMIT 1

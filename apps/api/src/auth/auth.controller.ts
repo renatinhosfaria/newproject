@@ -8,6 +8,7 @@ import {
   Req,
   Res,
   UseGuards,
+  Inject,
 } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { LoginRequestSchema, type LoginRequest } from "@pacaembu/contracts";
@@ -23,8 +24,8 @@ const TTL_SECONDS = 8 * 60 * 60;
 @Controller("api/auth")
 export class AuthController {
   constructor(
-    private readonly auth: AuthService,
-    private readonly limiter: LoginRateLimiter,
+    @Inject(AuthService) private readonly auth: AuthService,
+    @Inject(LoginRateLimiter) private readonly limiter: LoginRateLimiter,
   ) {}
 
   @Post("login")
