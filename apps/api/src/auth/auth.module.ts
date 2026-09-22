@@ -1,3 +1,5 @@
+import type { ApiConfig } from "../app.js";
+import type { Clock } from "../clock.js";
 import {
   Inject,
   Injectable,
@@ -6,7 +8,7 @@ import {
   type DynamicModule,
 } from "@nestjs/common";
 import type pg from "pg";
-import { AuthController } from "./auth.controller.js";
+import { AuthController, AUTH_CONFIG } from "./auth.controller.js";
 import { AuthService, DB } from "./auth.service.js";
 import { SessionGuard } from "./session.guard.js";
 import { LoginRateLimiter } from "./rate-limit.js";
@@ -62,12 +64,14 @@ class PoolLifecycle implements OnModuleDestroy {
   exports: [AuthService, SessionGuard, DB, CLOCK],
 })
 export class AuthModule {
-  static forRoot(databaseUrl?: string): DynamicModule {
+  static forRoot(config: ApiConfig, clock: Clock): DynamicModule {
     return {
       module: AuthModule,
-      providers: databaseUrl
-        ? [{ provide: DATABASE_URL, useValue: databaseUrl }]
-        : [],
+      providers: [
+        { provide: DATABASE_URL, useValue: config.databaseUrl },
+        { provide: CLOCK, useValue: clock },
+        { provide: AUTH_CONFIG, useValue: config },
+      ],
     };
   }
 }

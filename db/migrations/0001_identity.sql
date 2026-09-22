@@ -26,7 +26,7 @@ CREATE TABLE workspaces (
 CREATE TABLE users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name varchar(160) NOT NULL,
-  email citext NOT NULL UNIQUE,
+  email public.citext NOT NULL UNIQUE,
   password_hash text NOT NULL,
   status user_status NOT NULL DEFAULT 'invited',
   created_at timestamptz NOT NULL DEFAULT now(),

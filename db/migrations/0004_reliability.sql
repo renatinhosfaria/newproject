@@ -40,9 +40,10 @@ CREATE INDEX audit_events_actor_user_idx ON audit_events(actor_user_id);
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pacaembu_app') THEN
-    EXECUTE 'GRANT USAGE ON SCHEMA public TO pacaembu_app';
+    EXECUTE format('GRANT USAGE ON SCHEMA %I TO pacaembu_app', current_schema());
     EXECUTE 'GRANT SELECT, INSERT ON workspaces, users, workspace_memberships, auth_sessions, brokers, leads, conversations, messages, agents, agent_capabilities, workspace_agents, agent_sessions, agent_runs, agent_events, idempotency_records, audit_events TO pacaembu_app';
     EXECUTE 'REVOKE UPDATE, DELETE ON audit_events FROM pacaembu_app';
+    EXECUTE 'GRANT UPDATE ON auth_sessions TO pacaembu_app';
   END IF;
 END $$;
 

@@ -25,16 +25,14 @@ export function assertBrowserOrigin(
 
 @Injectable()
 export class CsrfInterceptor implements NestInterceptor {
+  constructor(private readonly allowedOrigin: string) {}
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     const request = context.switchToHttp().getRequest<{
       method: string;
       headers: Record<string, string | undefined>;
     }>();
     if (["POST", "PATCH", "DELETE"].includes(request.method)) {
-      assertBrowserOrigin(
-        request.headers,
-        process.env.APP_ORIGIN ?? "http://localhost:3000",
-      );
+      assertBrowserOrigin(request.headers, this.allowedOrigin);
     }
     return next.handle();
   }

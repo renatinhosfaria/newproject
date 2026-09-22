@@ -1,4 +1,6 @@
 import pg from "pg";
+import { randomUUID } from "node:crypto";
+import type { ApiConfig } from "../../apps/api/src/app.js";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "../../db/migrate.js";
 import { seed, type DevCredentials } from "../../db/seed.js";
@@ -18,6 +20,7 @@ export interface TestHarness {
   clock: ManualClock;
   app: NestFastifyApplication;
   http: TestHttpClient;
+  logs: string[];
   seedAgain(): Promise<void>;
   close(): Promise<void>;
 }
@@ -29,23 +32,9 @@ const credentials: DevCredentials = {
   brokerPassword: "test-broker-password",
 };
 
-// Vitest runs integration files concurrently against the same isolated
-// database. Serialize migration/role setup so PostgreSQL does not race on
-// system catalog rows (the application requests themselves remain parallel).
-let setupQueue: Promise<void> = Promise.resolve();
-
-async function acquireSetup(): Promise<() => void> {
-  let release!: () => void;
-  const turn = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  const previous = setupQueue;
-  setupQueue = setupQueue.then(() => turn);
-  await previous;
-  return release;
-}
-
-export async function createHarness(): Promise<TestHarness> {
+export async function createHarness(
+  config: Omit<ApiConfig, "databaseUrl"> = {},
+): Promise<TestHarness> {
   const appUrl = process.env.DATABASE_URL_TEST;
   const ownerUrl = process.env.DATABASE_URL_TEST_OWNER;
   if (!appUrl || !new URL(appUrl).pathname.endsWith("_test")) {
@@ -58,14 +47,36 @@ export async function createHarness(): Promise<TestHarness> {
       "integration tests require DATABASE_URL_TEST_OWNER pointing to a database ending in _test",
     );
   }
-  const ownerPool = new pg.Pool({ connectionString: ownerUrl });
-  const pool = new pg.Pool({ connectionString: appUrl, max: 1 });
-  const releaseSetup = await acquireSetup();
+  const schemaName = `test_${randomUUID().replaceAll("-", "")}`;
+  const adminPool = new pg.Pool({ connectionString: ownerUrl });
+  const scopedUrl = (url: string) => {
+    const scoped = new URL(url);
+    scoped.searchParams.set("options", `-csearch_path=${schemaName},pg_temp`);
+    return scoped.toString();
+  };
+  const ownerPool = new pg.Pool({ connectionString: scopedUrl(ownerUrl) });
+  const pool = new pg.Pool({ connectionString: scopedUrl(appUrl), max: 1 });
+  let app: NestFastifyApplication | undefined;
+  let closed = false;
+  const close = async () => {
+    if (closed) return;
+    closed = true;
+    try {
+      if (app) await app.close();
+    } finally {
+      await Promise.all([pool.end(), ownerPool.end()]);
+      try {
+        await adminPool.query(`DROP SCHEMA IF EXISTS "${schemaName}" CASCADE`);
+      } finally {
+        await adminPool.end();
+      }
+    }
+  };
   try {
-    await migrate(ownerPool);
-    await grantAppRole(ownerPool);
-    const db = drizzle(ownerPool, { schema });
-    await seed(db, credentials);
+    await adminPool.query(`CREATE SCHEMA "${schemaName}"`);
+    await migrate(ownerPool, schemaName);
+    const ownerDb = drizzle(ownerPool, { schema });
+    await seed(ownerDb, credentials);
     const fixtures = await installFixtures(ownerPool);
     await pool.query("select set_config('app.workspace_id', $1, false)", [
       fixtures.brokerA.workspaceId,
@@ -74,34 +85,40 @@ export async function createHarness(): Promise<TestHarness> {
       fixtures.brokerA.brokerId,
     ]);
     const clock = new ManualClock();
-    const app = await createApp(
+    const logs: string[] = [];
+    app = await createApp(
       {
         nodeEnv: "test",
         allowedOrigin: "http://localhost:3000",
-        databaseUrl: appUrl,
+        ...config,
+        databaseUrl: scopedUrl(appUrl),
       },
-      { clock },
+      {
+        clock,
+        logStream: {
+          write: (line) => {
+            logs.push(line);
+          },
+        },
+      },
     );
-    releaseSetup();
     return {
-      db,
+      db: drizzle(pool, { schema }),
       pool,
       ownerPool,
       fixtures,
       clock,
       app,
       http: new TestHttpClient(app),
-      seedAgain: () => seed(db, credentials),
-      close: async () => {
-        await app.close();
-        await pool.end();
-        await ownerPool.end();
+      logs,
+      seedAgain: async () => {
+        await migrate(ownerPool, schemaName);
+        await seed(ownerDb, credentials);
       },
+      close,
     };
   } catch (error) {
-    releaseSetup();
-    await pool.end();
-    await ownerPool.end();
+    await close();
     throw error;
   }
 }
@@ -165,30 +182,6 @@ export class TestHttpClient {
   }
   delete(url: string): TestHttpRequest {
     return new TestHttpRequest(this.app, "DELETE", url);
-  }
-}
-
-async function grantAppRole(pool: pg.Pool): Promise<void> {
-  const client = await pool.connect();
-  try {
-    // Vitest workers are separate processes, so the in-process setup queue is
-    // insufficient for catalog writes. A database advisory lock serializes
-    // role grants across workers without affecting application requests.
-    await client.query("SELECT pg_advisory_lock(284731)");
-    await client.query("GRANT USAGE ON SCHEMA public TO pacaembu_app");
-    await client.query(
-      "GRANT SELECT, INSERT ON workspaces, users, workspace_memberships, auth_sessions, brokers, leads, conversations, messages, agents, agent_capabilities, workspace_agents, agent_sessions, agent_runs, agent_events, idempotency_records, audit_events TO pacaembu_app",
-    );
-    await client.query("GRANT UPDATE ON auth_sessions TO pacaembu_app");
-    await client.query(
-      "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO pacaembu_app",
-    );
-    await client.query(
-      "REVOKE UPDATE, DELETE ON audit_events FROM pacaembu_app",
-    );
-    await client.query("SELECT pg_advisory_unlock(284731)");
-  } finally {
-    client.release();
   }
 }
 

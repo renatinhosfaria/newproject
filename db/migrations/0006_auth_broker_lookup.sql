@@ -5,12 +5,14 @@ RETURNS TABLE(id uuid, status broker_status)
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public, pg_temp
+SET search_path FROM CURRENT
 AS $$
   SELECT b.id, b.status
   FROM brokers b
   WHERE b.user_id = p_user_id AND b.workspace_id = p_workspace_id;
 $$;
+
+REVOKE ALL ON FUNCTION auth_broker_for_user(uuid, uuid) FROM PUBLIC;
 
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pacaembu_app') THEN

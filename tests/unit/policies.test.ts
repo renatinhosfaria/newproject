@@ -36,6 +36,16 @@ describe("proteções de autenticação", () => {
     ).toThrowError(expect.objectContaining({ code: "CSRF_ORIGIN_INVALID" }));
   });
 
+  it("conta IP+email normalizado sem bloquear o mesmo email em outro IP", () => {
+    const limiter = new LoginRateLimiter(new ManualClock());
+    for (let i = 0; i < 10; i++)
+      limiter.check("192.0.2.1", " USER@example.test ");
+    expect(() => limiter.check("192.0.2.1", "user@example.test")).toThrowError(
+      expect.objectContaining({ status: 429 }),
+    );
+    expect(() => limiter.check("192.0.2.2", "user@example.test")).not.toThrow();
+  });
+
   it("reinicia a janela de rate limit pelo relógio controlado", () => {
     const clock = new ManualClock();
     const limiter = new LoginRateLimiter(clock, 1, 100);

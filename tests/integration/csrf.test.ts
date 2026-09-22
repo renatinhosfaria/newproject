@@ -51,11 +51,9 @@ describe("CSRF por origem", () => {
   });
 
   it("marca cookie Secure fora do ambiente local", async () => {
-    const h = await createHarness();
+    const h = await createHarness({ nodeEnv: "production" });
     harnesses.push(h);
-    process.env.NODE_ENV = "production";
     const response = await login(h, { Origin: "http://localhost:3000" });
-    process.env.NODE_ENV = "test";
     expect(String(response.headers["set-cookie"])).toContain("; Secure");
   });
 });

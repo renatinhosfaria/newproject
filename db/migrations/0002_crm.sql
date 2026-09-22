@@ -20,7 +20,7 @@ CREATE TABLE leads (
   broker_id uuid NOT NULL,
   name varchar(160) NOT NULL,
   phone_normalized varchar(40),
-  email citext,
+  email public.citext,
   source varchar(80),
   stage lead_stage NOT NULL DEFAULT 'novo',
   interest varchar(160),

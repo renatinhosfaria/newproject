@@ -72,7 +72,7 @@ CREATE INDEX agent_sessions_agent_scope_idx ON agent_sessions(workspace_id, agen
 CREATE INDEX agent_sessions_lead_scope_idx ON agent_sessions(workspace_id, broker_id, lead_id);
 CREATE INDEX agent_sessions_conversation_scope_idx ON agent_sessions(workspace_id, broker_id, conversation_id);
 
-CREATE OR REPLACE FUNCTION assert_agent_session_scope() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION assert_agent_session_scope() RETURNS trigger LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 BEGIN
   IF NEW.lead_id IS NOT NULL AND NEW.conversation_id IS NOT NULL AND NOT EXISTS (
     SELECT 1 FROM conversations c
@@ -87,7 +87,7 @@ CREATE TRIGGER agent_session_scope_guard
   BEFORE INSERT OR UPDATE ON agent_sessions
   FOR EACH ROW EXECUTE FUNCTION assert_agent_session_scope();
 
-CREATE OR REPLACE FUNCTION assert_agent_session_agent_available() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION assert_agent_session_agent_available() RETURNS trigger LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 BEGIN
   IF NOT EXISTS (
     SELECT 1
@@ -107,7 +107,7 @@ CREATE TRIGGER agent_session_availability_guard
   BEFORE INSERT OR UPDATE ON agent_sessions
   FOR EACH ROW EXECUTE FUNCTION assert_agent_session_agent_available();
 
-CREATE OR REPLACE FUNCTION assert_agent_available() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE OR REPLACE FUNCTION assert_agent_available() RETURNS trigger LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 DECLARE
   session_agent_id uuid;
 BEGIN
