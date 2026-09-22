@@ -2,9 +2,8 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@pacaembu/contracts": ["packages/contracts/src/index.ts"]
+      "@pacaembu/contracts": ["./packages/contracts/src/index.ts"]
     }
   },
   "include": [
