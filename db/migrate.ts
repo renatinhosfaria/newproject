@@ -52,6 +52,7 @@ export async function migrate(
       "0009_idempotency_rls.sql",
       "0010_leads_update.sql",
       "0011_durable_agent_runs.sql",
+      "0012_health_readiness.sql",
     ]) {
       const version = file.slice(0, 4);
       const check = await client.query(
