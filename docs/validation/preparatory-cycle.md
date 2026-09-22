@@ -1,18 +1,18 @@
 # Evidência do ciclo preparatório do CRM
 
-Data: 22/09/2026. Branch de integração: `feat/preparatory-crm-infra`, baseada na tarefa 8 em `0146785`. Ambiente local: Linux, Node 24.21.0, pnpm 11.27.1, PostgreSQL 18.4 portátil em `127.0.0.1:55439`, banco exclusivo `pacaembu_test`, Chromium headless do Playwright. Nenhuma conta, sessão ou instalação Hermes/Brain existente foi usada.
+Data: 22/09/2026. Branch integrada: `feat/preparatory-crm-cycle`, com interface da tarefa 8 em `0146785` e infraestrutura da tarefa 9 em `e9022a0`. Ambiente local: Linux, Node 24.21.0, pnpm 11.27.1, PostgreSQL 18.4 portátil em `127.0.0.1:55439`, banco exclusivo `pacaembu_test`, Chromium headless do Playwright. Nenhuma conta, sessão ou instalação Hermes/Brain existente foi usada.
 
 | Verificação executada | Resultado |
 | --- | --- |
 | `pnpm install --frozen-lockfile` | Passou no workspace de quatro pacotes. |
-| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Passaram na branch integrada. |
-| `NODE_ENV=production pnpm build` | Passou; Next 16.3.5 compilou as rotas de login, leads, conversa e Agent. |
-| `pnpm test` com `DATABASE_URL_TEST` e `DATABASE_URL_TEST_OWNER` no banco isolado | 117/117 testes em 18 arquivos passaram na branch integrada. |
+| `pnpm typecheck`, `pnpm lint`, `pnpm format:check` | Passaram novamente após o fast-forward para a branch final. |
+| `NODE_ENV=production pnpm build` | Passou novamente após o fast-forward; Next 16.3.5 compilou as rotas de login, leads, conversa e Agent. |
+| `pnpm test` com `DATABASE_URL_TEST` e `DATABASE_URL_TEST_OWNER` no banco isolado | 117/117 testes em 18 arquivos passaram novamente após o fast-forward para a branch final. |
 | `pnpm test:e2e --workers 4` | Na tarefa 8 (`0146785`), 35 passaram e 1 foi pulado por escopo da tela. O merge de infraestrutura não alterou as telas ou os cenários dessa matriz. |
 | `docker compose -f infra/compose/compose.yaml config --quiet` com variáveis sintéticas | Passou. |
 | `pnpm exec playwright test --config playwright.compose.config.ts --list` | Descobriu o smoke de Compose, 1 teste. |
 | `pnpm db:migrate` e processo real `pnpm exec tsx apps/api/src/main.ts` no banco de testes | Passaram na branch de infraestrutura antes do rebase da interface; `/api/health/live` e `/api/health/ready` responderam HTTP 200. O processo foi encerrado após a consulta. |
-| `git diff --check` | Passou. |
+| `git diff --check` | Passou; revisão independente do conjunto não encontrou problemas críticos ou importantes. |
 
 Foram inspecionadas capturas das telas de carteira, Agent e supervisor em 1280px e de menu, conversa e Agent em 390px. As ações e o estado “Rascunho não enviado” ficaram visíveis; o menu móvel mostrou a identidade do corretor e o conteúdo permaneceu legível sem corte horizontal nas capturas. Os testes Playwright também cobriram teclado, validações associadas aos campos, reconexão SSE, cursor expirado, revogação, CSRF, envio duplicado e persistência após recarregar.
 
