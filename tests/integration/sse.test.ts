@@ -4,6 +4,7 @@ import { loginAs } from "../helpers/auth.js";
 import { post, waitForRun } from "../helpers/runs.js";
 import { ManualSseScheduler } from "../helpers/sse-scheduler.js";
 import { listenSse, readSse, SseParser } from "../helpers/sse.js";
+import { SseStreams } from "../../apps/api/src/agents/sse.js";
 import { EventStore } from "../../apps/api/src/agents/event-store.js";
 import { maintenance } from "../../db/maintenance.js";
 
@@ -533,6 +534,77 @@ describe("authorized durable SSE over real HTTP", () => {
     } finally {
       release();
       spy.mockRestore();
+    }
+  });
+  it("rejects a preflight completed after shutdown and closes without a client abort", async () => {
+    const scheduler = new ManualSseScheduler();
+    const { cookie, url } = await setup({
+      executorPaused: true,
+      sseScheduler: scheduler,
+    });
+    const store = h.app.get(EventStore);
+    const streams = h.app.get(SseStreams);
+    const prepare = store.prepare.bind(store);
+    const destroy = streams.onModuleDestroy.bind(streams);
+    let entered!: () => void;
+    let release!: () => void;
+    let destroyed!: () => void;
+    const preparing = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const didDestroy = new Promise<void>((resolve) => {
+      destroyed = resolve;
+    });
+    // Delay only delivery of the real PostgreSQL authorization result.
+    const prepareSpy = vi
+      .spyOn(store, "prepare")
+      .mockImplementationOnce(async (...args) => {
+        const state = await prepare(...args);
+        entered();
+        await gate;
+        return state;
+      });
+    const destroySpy = vi
+      .spyOn(streams, "onModuleDestroy")
+      .mockImplementation(() => {
+        destroy();
+        destroyed();
+      });
+    const abort = new AbortController();
+    const request = fetch(url, {
+      headers: { Cookie: cookie },
+      signal: AbortSignal.any([abort.signal, AbortSignal.timeout(5000)]),
+    });
+    let closing: Promise<void> | undefined;
+    try {
+      await preparing;
+      closing = h.close();
+      await didDestroy;
+      release();
+      const response = await request;
+      expect(response.status).toBe(503);
+      expect(response.headers.get("content-type")).toContain(
+        "application/problem+json",
+      );
+      expect(await response.json()).toMatchObject({
+        code: "SERVER_SHUTTING_DOWN",
+        retryable: true,
+      });
+      expect(scheduler.size).toBe(0);
+      await closing;
+      expect(abort.signal.aborted).toBe(false);
+      expect(scheduler.size).toBe(0);
+    } finally {
+      // Failure cleanup is not the behavior asserted above.
+      release();
+      abort.abort();
+      await request.catch(() => undefined);
+      await closing;
+      prepareSpy.mockRestore();
+      destroySpy.mockRestore();
     }
   });
 });

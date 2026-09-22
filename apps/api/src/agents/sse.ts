@@ -38,12 +38,14 @@ export const systemSseScheduler: SseScheduler = {
 @Injectable()
 export class SseStreams implements OnModuleDestroy {
   private readonly streams = new Set<() => void>();
+  private shuttingDown = false;
   constructor(
     @Inject(AuthService) private readonly auth: AuthService,
     @Inject(EventStore) private readonly store: EventStore,
     @Inject(SSE_SCHEDULER) private readonly scheduler: SseScheduler,
   ) {}
   onModuleDestroy(): void {
+    this.shuttingDown = true;
     for (const close of this.streams) close();
   }
   open(
@@ -58,6 +60,10 @@ export class SseStreams implements OnModuleDestroy {
     // The peer may disconnect while the controller is still authorizing.
     // In that case its close event has already fired.
     if (raw.destroyed || raw.writableEnded) return;
+    // Preflight can finish after the shutdown hook closed existing streams.
+    // Reject through the HTTP filter so the pending response also terminates.
+    if (this.shuttingDown)
+      throw problem(503, "SERVER_SHUTTING_DOWN", undefined, true);
     let closed = false;
     let busy = false;
     let heartbeatDue = false;
