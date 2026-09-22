@@ -394,6 +394,15 @@ components:
         detail: { type: string }
         request_id: { type: string }
         retryable: { type: boolean }
+        options:
+          type: array
+          description: Somente em 409 WORKSPACE_CONTEXT_REQUIRED, após credenciais válidas; lista os workspaces ativos do próprio usuário.
+          items:
+            type: object
+            required: [workspace_id, name]
+            properties:
+              workspace_id: { type: string, format: uuid }
+              name: { type: string }
     LoginRequest:
       type: object
       required: [email, password]
@@ -403,7 +412,7 @@ components:
         workspace_id: { type: string, format: uuid }
     SessionUser:
       type: object
-      required: [id, membership_id, name, email, role, workspace_id, broker_id]
+      required: [id, membership_id, name, email, role, workspace_id, workspace_name, broker_id]
       properties:
         id: { type: string, format: uuid }
         membership_id: { type: string, format: uuid }
@@ -411,6 +420,7 @@ components:
         email: { type: string, format: email }
         role: { type: string, enum: [broker, supervisor] }
         workspace_id: { type: string, format: uuid }
+        workspace_name: { type: string }
         broker_id: { type: [string, 'null'], format: uuid }
     PageInfo:
       type: object

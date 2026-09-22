@@ -23,6 +23,7 @@ interface MembershipRow {
   role: "broker" | "supervisor";
   membership_status: string;
   workspace_status: string;
+  workspace_name: string;
   broker_id: string | null;
   broker_status: string | null;
 }
@@ -61,7 +62,7 @@ export class AuthService {
     const membershipsResult = await this.db.execute(sql`
       SELECT wm.id AS membership_id, wm.workspace_id, wm.role,
         wm.status AS membership_status, w.status AS workspace_status,
-        b.id AS broker_id, b.status AS broker_status
+        w.name AS workspace_name, b.id AS broker_id, b.status AS broker_status
       FROM workspace_memberships wm
       JOIN workspaces w ON w.id = wm.workspace_id
       LEFT JOIN LATERAL auth_broker_for_user(wm.user_id, wm.workspace_id) b ON true
@@ -82,7 +83,11 @@ export class AuthService {
       membership = memberships[0];
     } else {
       const error = problem(409, "WORKSPACE_CONTEXT_REQUIRED");
-      error.options = memberships.map(({ workspace_id }) => ({ workspace_id }));
+      // Only the authenticated user's own active workspaces are listed.
+      error.options = memberships.map(({ workspace_id, workspace_name }) => ({
+        workspace_id,
+        name: workspace_name,
+      }));
       throw error;
     }
     if (
@@ -128,7 +133,7 @@ export class AuthService {
       SELECT s.user_id, s.workspace_id, s.membership_id, s.expires_at, s.revoked_at,
         u.id, u.name, u.email, u.status AS user_status,
         wm.role, wm.status AS membership_status, w.status AS workspace_status,
-        b.id AS broker_id, b.status AS broker_status
+        w.name AS workspace_name, b.id AS broker_id, b.status AS broker_status
       FROM auth_sessions s
       JOIN users u ON u.id = s.user_id
       JOIN workspace_memberships wm ON wm.id = s.membership_id AND wm.workspace_id = s.workspace_id AND wm.user_id = s.user_id
@@ -162,6 +167,7 @@ export class AuthService {
       email: row.email,
       role: row.role,
       workspace_id: row.workspace_id,
+      workspace_name: row.workspace_name,
       broker_id: row.role === "broker" ? row.broker_id : null,
     };
   }
@@ -205,6 +211,7 @@ export class AuthService {
       email: user.email,
       role: membership.role,
       workspace_id: membership.workspace_id,
+      workspace_name: membership.workspace_name,
       broker_id: membership.role === "broker" ? membership.broker_id : null,
     };
   }

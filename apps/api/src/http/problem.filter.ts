@@ -10,7 +10,7 @@ export interface ProblemBody {
   detail?: string;
   request_id: string;
   retryable: boolean;
-  options?: Array<{ workspace_id: string }>;
+  options?: Array<{ workspace_id: string; name: string }>;
 }
 
 export class ProblemError extends Error {
@@ -19,7 +19,7 @@ export class ProblemError extends Error {
   readonly detail?: string;
   readonly retryable: boolean;
   requestId?: string;
-  options?: Array<{ workspace_id: string }>;
+  options?: Array<{ workspace_id: string; name: string }>;
 
   constructor(
     status: number,

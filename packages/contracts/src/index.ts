@@ -17,6 +17,17 @@ export const ProblemSchema = z.object({
 });
 export type Problem = z.infer<typeof ProblemSchema>;
 
+// 409 WORKSPACE_CONTEXT_REQUIRED after valid credentials lists the choices.
+export const WorkspaceOptionSchema = z.object({
+  workspace_id: UuidSchema,
+  name: z.string().min(1),
+});
+export type WorkspaceOption = z.infer<typeof WorkspaceOptionSchema>;
+export const WorkspaceContextProblemSchema = ProblemSchema.extend({
+  code: z.literal("WORKSPACE_CONTEXT_REQUIRED"),
+  options: z.array(WorkspaceOptionSchema).min(2),
+});
+
 export const LoginRequestSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(256),
@@ -32,6 +43,7 @@ export const SessionUserSchema = z.object({
   email: z.string().email(),
   role: RoleSchema,
   workspace_id: UuidSchema,
+  workspace_name: z.string().min(1),
   broker_id: UuidSchema.nullable(),
 });
 export type SessionUser = z.infer<typeof SessionUserSchema>;
@@ -225,6 +237,22 @@ export const AgentRunSchema = z.object({
   updated_at: DateTimeSchema,
 });
 export type AgentRun = z.infer<typeof AgentRunSchema>;
+
+export const AgentRunAcceptedSchema = z.object({
+  run_id: z.string().min(1),
+  session_id: z.string().min(1),
+  status: z.enum(["queued", "running"]),
+});
+export type AgentRunAccepted = z.infer<typeof AgentRunAcceptedSchema>;
+
+export const AgentCatalogItemSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string(),
+  status: z.enum(["online", "degraded", "disabled"]),
+  capabilities: z.array(z.string()),
+});
+export type AgentCatalogItem = z.infer<typeof AgentCatalogItemSchema>;
 
 export const AgentSessionSchema = z.object({
   id: UuidSchema,

@@ -13,6 +13,7 @@ const user = (overrides: Partial<SessionUser> = {}): SessionUser => ({
   email: "broker@example.test",
   role: "broker",
   workspace_id: "00000000-0000-4000-8000-000000000003",
+  workspace_name: "Workspace de teste",
   broker_id: "00000000-0000-4000-8000-000000000004",
   ...overrides,
 });

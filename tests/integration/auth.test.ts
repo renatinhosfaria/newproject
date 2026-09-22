@@ -317,9 +317,13 @@ describe("autenticação revogável", () => {
       .send({ email: actor.email, password: actor.password });
     expect(ambiguous.status).toBe(409);
     expect(ambiguous.body.code).toBe("WORKSPACE_CONTEXT_REQUIRED");
+    // Names let the UI offer a readable choice; only this user's workspaces.
     expect(ambiguous.body.options).toEqual([
-      { workspace_id: actor.workspaceId },
-      { workspace_id: h.fixtures.multiWorkspace.workspaceId },
+      { workspace_id: actor.workspaceId, name: "Pacaembu local" },
+      {
+        workspace_id: h.fixtures.multiWorkspace.workspaceId,
+        name: "Workspace C",
+      },
     ]);
     const cookie = await loginAs(h, h.fixtures.multiWorkspace);
     const me = await h.http.get("/api/auth/me").set("Cookie", cookie);
@@ -327,6 +331,7 @@ describe("autenticação revogável", () => {
       role: "supervisor",
       broker_id: null,
       workspace_id: h.fixtures.multiWorkspace.workspaceId,
+      workspace_name: "Workspace C",
     });
   });
 

@@ -42,6 +42,14 @@ describe("OpenAPI contract", () => {
         "retryable",
       ]),
     });
+    // Workspace choice after an authenticated 409 carries readable names.
+    expect(api.components?.schemas?.SessionUser?.required).toContain(
+      "workspace_name",
+    );
+    expect(
+      (api.components?.schemas?.Problem as any)?.properties?.options?.items
+        ?.required,
+    ).toEqual(["workspace_id", "name"]);
 
     const operations = {
       "/api/auth/login": { post: ["200", "401", "409", "422", "429"] },
