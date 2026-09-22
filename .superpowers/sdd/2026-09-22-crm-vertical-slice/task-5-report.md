@@ -53,3 +53,9 @@
 - Added a regression that creates a conversation, removes the empty conversation and its lead through `ownerPool` (without changing the foreign-key definition), then replays the same key and input. The replay now returns `404 RESOURCE_NOT_FOUND` instead of the stale stored `201` response.
 - RED: `pnpm exec vitest run tests/integration/conversations.test.ts -t 'revalida acesso' --no-file-parallelism` — failed as expected with `expected 201 to be 404` when the pre-authorization was temporarily removed.
 - GREEN: `pnpm exec vitest run tests/integration/conversations.test.ts tests/integration/idempotency.test.ts tests/contracts --no-file-parallelism` — 4 files and 20 tests passed.
+
+## Review `cd4f023..82d93a4`
+
+- **ADDRESSED**: conversation creation now authorizes the lead before idempotency lookup/replay, preventing a stale stored response from bypassing the current resource check.
+- **SPEC PASS**: the transaction callback still calls `assertLeadInScope` before a new insert, and the regression requires `404 RESOURCE_NOT_FOUND` after the conversation and lead are removed.
+- **QUALITY PASS**: the regression removes the dependent conversation before the lead through `ownerPool`; no foreign-key definition or constraint was relaxed. The diff is clean under `git diff --check`.
