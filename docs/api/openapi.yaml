@@ -299,6 +299,7 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '410': { $ref: '#/components/responses/EventReplayUnavailable' }
         '422': { $ref: '#/components/responses/ValidationError' }
+        '503': { $ref: '#/components/responses/ServerShuttingDown' }
 
 components:
   securitySchemes:
@@ -371,6 +372,10 @@ components:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     EventReplayUnavailable:
       description: EVENT_REPLAY_UNAVAILABLE após a retenção de sete dias
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    ServerShuttingDown:
+      description: API em encerramento antes de abrir o fluxo (SERVER_SHUTTING_DOWN, retryable)
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     ServiceUnavailable:
