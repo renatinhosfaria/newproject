@@ -45,20 +45,42 @@ export class RunExecutor implements OnModuleInit, OnModuleDestroy {
   ) {}
   async onModuleInit(): Promise<void> {
     if (!this.enabled) return;
-    this.lock = await this.pool.connect();
-    // One owner per database schema; the lock is held by a dedicated connection.
-    const acquired = await this.lock.query(
-      "SELECT pg_try_advisory_lock(hashtextextended(current_schema() || ':agent-executor',0)) AS acquired",
-    );
-    if (!acquired.rows[0].acquired) {
-      this.lock.release();
-      this.lock = undefined;
-      throw new Error("Agent executor already active");
+    // One connection holds the singleton lock; discovery/claims need another.
+    // Reject before acquiring anything instead of deadlocking pool acquisition.
+    const max = this.pool.options.max ?? 10;
+    if (!Number.isInteger(max) || max < 2)
+      throw new Error("Agent executor requires DB_POOL_MAX >= 2");
+    try {
+      this.lock = await this.pool.connect();
+      const acquired = await this.lock.query(
+        "SELECT pg_try_advisory_lock(hashtextextended(current_schema() || ':agent-executor',0)) AS acquired",
+      );
+      if (!acquired.rows[0].acquired)
+        throw new Error("Agent executor already active");
+      const pending = await this.pending();
+      for (const row of pending.filter((r) => r.status === "running"))
+        await this.fail(row, "RUN_INTERRUPTED", "failed");
+      this.schedule();
+    } catch (error) {
+      // Cleanup belongs here too: direct lifecycle callers may not own an app.
+      // releaseLock destroys the connection if explicit unlock fails.
+      await this.releaseLock().catch(() => {});
+      throw error;
     }
-    const pending = await this.pending();
-    for (const row of pending.filter((r) => r.status === "running"))
-      await this.fail(row, "RUN_INTERRUPTED", "failed");
-    this.schedule();
+  }
+  private async releaseLock(): Promise<void> {
+    const client = this.lock;
+    this.lock = undefined;
+    if (!client) return;
+    try {
+      await client.query(
+        "SELECT pg_advisory_unlock(hashtextextended(current_schema() || ':agent-executor',0))",
+      );
+    } catch (error) {
+      client.release(true);
+      throw error;
+    }
+    client.release();
   }
   private schedule(): void {
     if (this.stopping) return;
@@ -284,14 +306,11 @@ export class RunExecutor implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy(): Promise<void> {
     this.stopping = true;
     if (this.timer) clearTimeout(this.timer);
-    if (this.active) await this.hermes.stopAgentRun(this.active.run_id);
-    await this.task;
-    if (this.lock) {
-      await this.lock.query(
-        "SELECT pg_advisory_unlock(hashtextextended(current_schema() || ':agent-executor',0))",
-      );
-      this.lock.release();
-      this.lock = undefined;
+    try {
+      if (this.active) await this.hermes.stopAgentRun(this.active.run_id);
+      await this.task;
+    } finally {
+      await this.releaseLock();
     }
   }
 }

@@ -75,6 +75,13 @@ export async function createApp(
   );
   app.useGlobalFilters(new ProblemFilter());
   app.enableShutdownHooks();
-  await app.init();
-  return app;
+  try {
+    await app.init();
+    return app;
+  } catch (error) {
+    // init() can fail after providers allocated pools and shutdown hooks.
+    // The caller never receives this instance, so it cannot close it for us.
+    await app.close();
+    throw error;
+  }
 }
