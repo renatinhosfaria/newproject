@@ -13,9 +13,7 @@ export interface AuditInput {
   metadata?: Record<string, string | number | boolean | null>;
 }
 
-// Authentication is the only audit producer in this cycle. Keep its public
-// metadata deliberately small so credentials, cookies and arbitrary request
-// data can never be persisted through this boundary.
+// Keep metadata deliberately small: no credentials, prompts or tool returns.
 const SAFE_METADATA_KEYS = new Set([
   "method",
   "code",
@@ -23,6 +21,7 @@ const SAFE_METADATA_KEYS = new Set([
   "lead_id",
   "conversation_id",
   "fields",
+  "tool",
 ]);
 
 @Injectable()

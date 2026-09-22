@@ -11,6 +11,8 @@ import { RequestIdInterceptor } from "./http/request-id.js";
 import { SystemClock } from "./clock.js";
 import { CsrfInterceptor } from "./auth/csrf.js";
 
+import type { AgentDependencies } from "./agents/agents.module.js";
+
 export interface ApiConfig {
   nodeEnv?: string;
   allowedOrigin?: string;
@@ -19,7 +21,10 @@ export interface ApiConfig {
 
 export async function createApp(
   config: ApiConfig,
-  deps: { clock?: Clock; logStream?: { write(message: string): void } } = {},
+  deps: AgentDependencies & {
+    clock?: Clock;
+    logStream?: { write(message: string): void };
+  } = {},
 ): Promise<NestFastifyApplication> {
   const resolved = {
     nodeEnv: config.nodeEnv ?? process.env.NODE_ENV ?? "development",
@@ -60,7 +65,7 @@ export async function createApp(
       reply.header("cache-control", "no-store");
   });
   const app = await NestFactory.create<NestFastifyApplication>(
-    AppModule.forRoot(resolved, deps.clock ?? new SystemClock()),
+    AppModule.forRoot(resolved, deps.clock ?? new SystemClock(), deps),
     adapter,
     { logger: false },
   );

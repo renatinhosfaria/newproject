@@ -51,6 +51,7 @@ export async function migrate(
       "0008_schema_scoped_auth.sql",
       "0009_idempotency_rls.sql",
       "0010_leads_update.sql",
+      "0011_durable_agent_runs.sql",
     ]) {
       const version = file.slice(0, 4);
       const check = await client.query(

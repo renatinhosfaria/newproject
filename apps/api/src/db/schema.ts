@@ -8,10 +8,13 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
   varchar,
   primaryKey,
 } from "drizzle-orm/pg-core";
+
+import { sql } from "drizzle-orm";
 
 const id = () => uuid("id").defaultRandom().primaryKey();
 const citext = customType<{ data: string }>({ dataType: () => "citext" });
@@ -238,33 +241,53 @@ export const agentSessions = pgTable("agent_sessions", {
   createdAt: created(),
   updatedAt: updated(),
 });
-export const agentRuns = pgTable("agent_runs", {
-  runId: uuid("run_id").defaultRandom().primaryKey(),
-  workspaceId: workspaceId(),
-  brokerId: brokerId(),
-  sessionId: uuid("session_id").notNull(),
-  status: agentRunStatus("status").notNull(),
-  inputContent: text("input_content").notNull(),
-  resultJson: jsonb("result_json").$type<Record<string, unknown>>(),
-  errorCode: varchar("error_code", { length: 120 }),
-  outputMessageId: uuid("output_message_id"),
-  eventsExpireAt: timestamp("events_expire_at", { withTimezone: true }),
-  createdAt: created(),
-  updatedAt: updated(),
-});
-export const agentEvents = pgTable("agent_events", {
-  id: id(),
-  workspaceId: workspaceId(),
-  brokerId: brokerId(),
-  sessionId: uuid("session_id").notNull(),
-  runId: uuid("run_id").notNull(),
-  sequence: integer("sequence").notNull(),
-  type: varchar("type", { length: 160 }).notNull(),
-  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
-  requestId: varchar("request_id", { length: 160 }).notNull(),
-  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
-  createdAt: created(),
-});
+export const agentRuns = pgTable(
+  "agent_runs",
+  {
+    runId: uuid("run_id").defaultRandom().primaryKey(),
+    workspaceId: workspaceId(),
+    brokerId: brokerId(),
+    sessionId: uuid("session_id").notNull(),
+    status: agentRunStatus("status").notNull(),
+    inputContent: text("input_content").notNull(),
+    requestId: varchar("request_id", { length: 160 })
+      .default("legacy-run")
+      .notNull(),
+    resultJson: jsonb("result_json").$type<Record<string, unknown>>(),
+    errorCode: varchar("error_code", { length: 120 }),
+    outputMessageId: uuid("output_message_id"),
+    eventsExpireAt: timestamp("events_expire_at", { withTimezone: true }),
+    createdAt: created(),
+    updatedAt: updated(),
+  },
+  (table) => ({
+    outputMessageUnique: uniqueIndex("agent_runs_output_message_unique")
+      .on(table.outputMessageId)
+      .where(sql`${table.outputMessageId} IS NOT NULL`),
+  }),
+);
+export const agentEvents = pgTable(
+  "agent_events",
+  {
+    id: id(),
+    workspaceId: workspaceId(),
+    brokerId: brokerId(),
+    sessionId: uuid("session_id").notNull(),
+    runId: uuid("run_id").notNull(),
+    sequence: integer("sequence").notNull(),
+    type: varchar("type", { length: 160 }).notNull(),
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    requestId: varchar("request_id", { length: 160 }).notNull(),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+    createdAt: created(),
+  },
+  (table) => ({
+    runSequenceUnique: unique("agent_events_run_id_sequence_key").on(
+      table.runId,
+      table.sequence,
+    ),
+  }),
+);
 export const idempotencyRecords = pgTable("idempotency_records", {
   id: id(),
   workspaceId: workspaceId(),

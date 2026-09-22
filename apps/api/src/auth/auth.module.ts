@@ -4,7 +4,7 @@ import {
   Inject,
   Injectable,
   Module,
-  type OnModuleDestroy,
+  type OnApplicationShutdown,
   type DynamicModule,
 } from "@nestjs/common";
 import type pg from "pg";
@@ -17,13 +17,13 @@ import { SystemClock } from "../clock.js";
 import { createDb, createPool } from "../db/client.js";
 import { CLOCK } from "../http/health.controller.js";
 
-const POOL = Symbol("POOL");
+export const POOL = Symbol("POOL");
 const DATABASE_URL = Symbol("DATABASE_URL");
 
 @Injectable()
-class PoolLifecycle implements OnModuleDestroy {
+class PoolLifecycle implements OnApplicationShutdown {
   constructor(@Inject(POOL) private readonly pool: pg.Pool) {}
-  async onModuleDestroy(): Promise<void> {
+  async onApplicationShutdown(): Promise<void> {
     await this.pool.end();
   }
 }
@@ -61,7 +61,7 @@ class PoolLifecycle implements OnModuleDestroy {
     },
     PoolLifecycle,
   ],
-  exports: [AuthService, SessionGuard, DB, CLOCK],
+  exports: [AuthService, SessionGuard, DB, CLOCK, POOL],
 })
 export class AuthModule {
   static forRoot(config: ApiConfig, clock: Clock): DynamicModule {

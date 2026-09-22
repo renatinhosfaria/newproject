@@ -1,4 +1,5 @@
 import pg from "pg";
+import { controlledAdapter, type MockScenario } from "./agent-adapter.js";
 import { randomUUID } from "node:crypto";
 import type { ApiConfig } from "../../apps/api/src/app.js";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -23,7 +24,11 @@ export interface TestHarness {
   logs: string[];
   origin: string;
   seedAgain(): Promise<void>;
-  restartApp(): Promise<void>;
+  restartApp(overrides?: {
+    executorPaused?: boolean;
+    mockScenario?: MockScenario;
+  }): Promise<void>;
+  releaseAgent(): void;
   close(): Promise<void>;
 }
 
@@ -35,7 +40,10 @@ const credentials: DevCredentials = {
 };
 
 export async function createHarness(
-  config: Omit<ApiConfig, "databaseUrl"> = {},
+  config: Omit<ApiConfig, "databaseUrl"> & {
+    mockScenario?: MockScenario;
+    executorPaused?: boolean;
+  } = {},
 ): Promise<TestHarness> {
   const appUrl = process.env.DATABASE_URL_TEST;
   const ownerUrl = process.env.DATABASE_URL_TEST_OWNER;
@@ -67,9 +75,15 @@ export async function createHarness(
     ...config,
     databaseUrl: scopedUrl(appUrl),
   };
+  let releaseAgent = () => {};
   const createTestApp = async () =>
     createApp(appConfig, {
       clock,
+      startExecutor: !config.executorPaused,
+      hermesFactory: (tools) =>
+        controlledAdapter(tools, config.mockScenario, (release) => {
+          releaseAgent = release;
+        }),
       logStream: {
         write: (line) => {
           logs.push(line);
@@ -126,8 +140,10 @@ export async function createHarness(
         await migrate(ownerPool, schemaName);
         await seed(ownerDb, credentials);
       },
-      restartApp: async () => {
+      releaseAgent: () => releaseAgent(),
+      restartApp: async (overrides = {}) => {
         if (app) await app.close();
+        Object.assign(config, overrides);
         app = await createTestApp();
         http = new TestHttpClient(app);
       },

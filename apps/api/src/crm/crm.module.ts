@@ -22,7 +22,12 @@ export class CrmModule {
         LeadsService,
         ConversationsService,
       ],
-      exports: [IdempotencyService],
+      exports: [
+        IdempotencyService,
+        LeadsService,
+        ConversationsService,
+        AuthModule,
+      ],
     };
   }
 }
