@@ -22,12 +22,13 @@ Somente o proxy Nginx publica uma porta no loopback. PostgreSQL, Redis, API e We
 docker compose --env-file .env -f infra/compose/compose.yaml ps
 docker compose --env-file .env -f infra/compose/compose.yaml logs --tail=100 api web proxy
 docker compose --env-file .env -f infra/compose/compose.yaml stop
+docker compose --env-file .env -f infra/compose/compose.yaml run --rm migrate pnpm db:maintenance
 pnpm install --frozen-lockfile
 pnpm format:check && pnpm lint && pnpm typecheck
 pnpm test && pnpm build && pnpm test:e2e
 ```
 
-Os logs de aplicação ocultam cookie, token e senha. Não compartilhe o arquivo `.env` ou a saída de `docker compose config` sem revisão. `GET /api/health/live` confirma que o processo responde; `GET /api/health/ready` confirma conexão com o banco e a migration final. A manutenção manual `pnpm db:maintenance` expira sessões, registros de idempotência e eventos de runs terminados conforme as janelas do contrato.
+Os logs de aplicação ocultam cookie, token e senha. Não compartilhe o arquivo `.env` ou a saída de `docker compose config` sem revisão. `GET /api/health/live` confirma que o processo responde; `GET /api/health/ready` confirma conexão com o banco e a migration final. O comando de manutenção acima expira sessões, registros de idempotência e eventos de runs terminados conforme as janelas do contrato.
 
 Para testes de integração fora do Compose, configure `DATABASE_URL_TEST` e `DATABASE_URL_TEST_OWNER` para o mesmo banco isolado com nome terminado em `_test`; use roles diferentes para a aplicação e o dono do schema. `infra/compose/compose.test.yaml` fornece um banco de testes local. O runner cria um schema exclusivo por teste e o remove ao concluir.
 
