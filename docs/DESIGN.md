@@ -2,7 +2,7 @@
 
 - **Produto:** Pacaembu Orbit CRM
 - **Versão:** 1.0
-- **Status:** aprovado para o protótipo
+- **Status:** aprovado como referência de design
 - **Última referência visual:** commit `558e7fb` (`feat: publish approved CRM prototype`)
 
 Este documento é a fonte de verdade para a experiência visual e para o comportamento da interface do CRM. Toda nova tela, componente ou alteração de fluxo deve seguir estas regras ou registrar uma decisão que explique a exceção.
@@ -302,7 +302,7 @@ O design deve reforçar as regras técnicas descritas em `security-model.md`:
 - cada fluxo novo deve incluir estado vazio, carregando e erro;
 - mudanças visuais devem ser conferidas em desktop e mobile;
 - alterações no comportamento dos Agents devem atualizar este documento e o contrato de integração quando necessário;
-- o protótipo é referência visual, não implementação da API, Hermes ou WhatsApp.
+- este documento é a referência visual; ele não substitui a implementação da API, do Hermes ou do WhatsApp.
 
 ## Critérios de revisão visual
 
@@ -317,7 +317,7 @@ Antes de aprovar uma tela, verificar:
 7. nenhum dado de outro corretor aparece no contexto;
 8. sugestões do Agent estão separadas de ações executadas;
 9. o conteúdo respeita as condições comerciais aprovadas;
-10. a mudança foi refletida no protótipo ou na implementação correspondente.
+10. a mudança foi refletida na implementação correspondente e nesta especificação quando necessário.
 
 ## Governança do documento
 
