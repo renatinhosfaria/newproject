@@ -3,13 +3,16 @@
   "compilerOptions": {
     "noEmit": true,
     "baseUrl": ".",
-    "paths": { "@pacaembu/contracts": ["packages/contracts/src/index.ts"] }
+    "paths": {
+      "@pacaembu/contracts": ["packages/contracts/src/index.ts"]
+    }
   },
   "include": [
     "packages/**/*.ts",
-    "apps/**/*.ts",
+    "apps/api/**/*.ts",
     "db/**/*.ts",
     "tests/**/*.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "playwright.config.ts"
   ]
 }

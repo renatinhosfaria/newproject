@@ -13,12 +13,14 @@
     "test:contract": "vitest run tests/contracts",
     "test:unit": "vitest run tests/unit",
     "test:integration": "node scripts/run-integration-tests.mjs",
-    "typecheck": "tsc --noEmit",
-    "lint": "eslint packages tests vitest.config.ts",
-    "format:check": "prettier --check packages scripts tests db apps infra .prettierrc.json package.json pnpm-workspace.yaml tsconfig.base.json tsconfig.json vitest.config.ts",
+    "typecheck": "tsc --noEmit && pnpm --filter @pacaembu/web typecheck",
+    "lint": "eslint packages tests apps/api apps/web vitest.config.ts playwright.config.ts",
+    "format:check": "prettier --check packages scripts tests db apps infra .prettierrc.json package.json pnpm-workspace.yaml tsconfig.base.json tsconfig.json vitest.config.ts playwright.config.ts",
     "db:migrate": "tsx db/migrate.ts",
     "db:seed": "tsx db/seed.ts",
-    "db:maintenance": "tsx db/maintenance.ts"
+    "db:maintenance": "tsx db/maintenance.ts",
+    "build": "pnpm --filter @pacaembu/web build",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",
@@ -41,6 +43,8 @@
     "typescript": "5.9.3",
     "vitest": "4.0.14",
     "yaml": "2.9.1",
-    "zod": "3.25.76"
+    "zod": "3.25.76",
+    "@playwright/test": "1.63.0",
+    "eslint-plugin-react-hooks": "7.1.1"
   }
 }

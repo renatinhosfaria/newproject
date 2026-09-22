@@ -1,0 +1,92 @@
+/* Tokens de docs/DESIGN.md. Altere aqui antes de mudar componentes. */
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-latin-700-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Nunito Sans";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/nunito-sans-latin-800-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Dongle";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/dongle-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Dongle";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("/fonts/dongle-latin-700-normal.woff2") format("woff2");
+}
+
+:root {
+  --navy: #003d4c;
+  --navy-2: #002e3a;
+  --blue-bright: #005568;
+  --red: #e4002b;
+  --red-bright: #c90027;
+  --yellow: #ffb81c;
+  --green: #2eb67d;
+  --whatsapp: #00a811;
+  --purple: #7564ee;
+  --surface: #f7faf9;
+  --card: #ffffff;
+  --line: #e5ebf3;
+  --ink: #003d4c;
+  --muted: #718097;
+
+  /* muted (#718097) tem ~4:1 sobre card/surface: abaixo de AA para texto
+     pequeno. Texto auxiliar pequeno usa ink; muted fica para texto grande. */
+  --text-small: var(--ink);
+  --purple-tint: rgba(117, 100, 238, 0.12);
+  --red-tint: rgba(228, 0, 43, 0.08);
+  --yellow-tint: rgba(255, 184, 28, 0.18);
+  --green-tint: rgba(46, 182, 125, 0.14);
+
+  --font-display: "Dongle", "Nunito Sans", system-ui, sans-serif;
+  --font-ui: "Nunito Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  /* Escala de 4px. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-9: 36px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+
+  --focus-ring: 0 0 0 3px var(--card), 0 0 0 6px var(--blue-bright);
+  --shadow-float: 0 12px 32px rgba(0, 46, 58, 0.16);
+
+  --sidebar-width: 260px;
+  --topbar-height: 75px;
+  --content-max: 1540px;
+}
