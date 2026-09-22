@@ -42,8 +42,11 @@ CREATE TABLE workspace_memberships (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (workspace_id, user_id),
-  UNIQUE (workspace_id, id, user_id)
+  UNIQUE (workspace_id, id, user_id),
+  UNIQUE (workspace_id, user_id, role)
 );
+
+CREATE INDEX workspace_memberships_user_idx ON workspace_memberships(user_id);
 
 CREATE TABLE auth_sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

@@ -21,12 +21,25 @@ const ids = {
 };
 
 export async function seed(db: Db, credentials: DevCredentials): Promise<void> {
-  const environment = process.env.NODE_ENV ?? "development";
+  const environment = process.env.NODE_ENV;
   if (environment !== "development" && environment !== "test") {
     throw new Error("development seed is restricted to development and test");
   }
-  if (!credentials.supervisorPassword || !credentials.brokerPassword) {
-    throw new Error("seed passwords must be provided through the environment");
+  if (
+    !credentials.supervisorEmail ||
+    !credentials.brokerEmail ||
+    !credentials.supervisorPassword ||
+    !credentials.brokerPassword
+  ) {
+    throw new Error(
+      "seed emails and passwords must be provided through the environment",
+    );
+  }
+  if (
+    !credentials.supervisorEmail.includes("@") ||
+    !credentials.brokerEmail.includes("@")
+  ) {
+    throw new Error("seed emails must be valid email addresses");
   }
   const supervisorHash = await argon2.hash(credentials.supervisorPassword, {
     type: argon2.argon2id,
@@ -83,8 +96,17 @@ export async function seed(db: Db, credentials: DevCredentials): Promise<void> {
 }
 
 export async function main(): Promise<void> {
-  if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL is required");
-  const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL is required");
+  if (process.env.NODE_ENV === "test") {
+    const databaseName = new URL(connectionString).pathname.slice(1);
+    if (!databaseName.endsWith("_test")) {
+      throw new Error(
+        "test seed requires DATABASE_URL pointing to a _test database",
+      );
+    }
+  }
+  const pool = new pg.Pool({ connectionString });
   try {
     await migrate(pool);
     await seed(createDb(pool), {

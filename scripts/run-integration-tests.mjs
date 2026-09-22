@@ -13,9 +13,14 @@ try {
 }
 
 const vitest = process.platform === "win32" ? "vitest.cmd" : "vitest";
-const child = spawn(vitest, ["run", "--project", "integration"], {
-  stdio: "inherit",
-});
+const requestedArgs = process.argv.slice(2);
+const child = spawn(
+  vitest,
+  ["run", "--project", "integration", ...requestedArgs],
+  {
+    stdio: "inherit",
+  },
+);
 child.on("exit", (code, signal) => {
   process.exitCode = code ?? (signal ? 1 : 0);
 });

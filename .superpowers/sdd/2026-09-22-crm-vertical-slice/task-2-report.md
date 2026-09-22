@@ -4,6 +4,16 @@
 
 Implementação concluída no commit desta tarefa, com a estrutura de persistência, isolamento por banco, seed local, harness/fixtures e Nest/Fastify mínimo previstos no brief. Durante a auditoria final, o job de manutenção foi ajustado para respeitar `events_expire_at` e remover somente eventos de runs terminados, e o seed passou a aceitar exclusivamente `development` ou `test`.
 
+## Fix round 1
+
+- Fixtures do harness agora usam IDs determinísticos e `INSERT ... ON CONFLICT ... RETURNING`, recuperando sempre os IDs persistidos. `readFixture` recebe o workspace explicitamente e ordena a seleção; chamadas repetidas de `createHarness()` não criam referências órfãs nem confundem memberships.
+- `agent_sessions` agora vincula por constraints compostas broker/workspace/user e membership/workspace/user/role, com `membership_role = broker` por default. Triggers impedem sessões e runs para agentes `disabled` ou não habilitados no workspace, preservando as FKs separadas e o guard de igualdade lead/conversa.
+- Índices dedicados foram adicionados para memberships por usuário, capabilities, workspace agents por agente, mensagens por workspace/broker/conversa, idempotência por usuário, auditoria por ator e sessões por usuário/agente.
+- O seed exige `NODE_ENV` explícito (`development` ou `test`), emails e senhas configurados, e em `test` só aceita `DATABASE_URL` terminando em `_test`.
+- `scripts/run-integration-tests.mjs` repassa argumentos adicionais ao Vitest depois do projeto `integration`.
+
+Verificação deste round: `./node_modules/.bin/vitest run tests/unit tests/contracts` passou (3 arquivos/8 testes), ESLint passou, Prettier passou e `git diff --check` passou. `./node_modules/.bin/tsc --noEmit` continua bloqueado pelas dependências ausentes de Nest/pg/Drizzle/argon2. A integração não foi executada: o host não possui PostgreSQL nem Docker.
+
 ## Arquivos
 
 - `db/migrations/0001_identity.sql` a `0004_reliability.sql`: extensões, enums, 16 tabelas do ciclo, chaves compostas, índices, trigger de escopo de Agent, RLS/policies e grants para `pacaembu_app`.

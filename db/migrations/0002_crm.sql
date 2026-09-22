@@ -70,4 +70,5 @@ CREATE TABLE messages (
   UNIQUE (broker_id, external_message_id)
 );
 CREATE INDEX messages_conversation_occurred_idx ON messages(conversation_id, occurred_at);
+CREATE INDEX messages_workspace_broker_conversation_idx ON messages(workspace_id, broker_id, conversation_id);
 CREATE INDEX messages_workspace_broker_created_idx ON messages(workspace_id, broker_id, created_at, id);

@@ -234,6 +234,7 @@ export const agentSessions = pgTable("agent_sessions", {
   conversationId: uuid("conversation_id"),
   title: varchar("title", { length: 160 }).notNull(),
   status: agentSessionStatus("status").notNull(),
+  membershipRole: membershipRole("membership_role").notNull(),
   createdAt: created(),
   updatedAt: updated(),
 });

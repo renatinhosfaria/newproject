@@ -17,6 +17,7 @@ CREATE TABLE idempotency_records (
   CHECK ((response_status IS NULL AND response_body IS NULL) OR (response_status IS NOT NULL AND response_body IS NOT NULL))
 );
 CREATE INDEX idempotency_expiry_idx ON idempotency_records(expires_at);
+CREATE INDEX idempotency_user_idx ON idempotency_records(user_id);
 CREATE INDEX idempotency_workspace_broker_idx ON idempotency_records(workspace_id, broker_id, created_at, id);
 
 CREATE TABLE audit_events (
@@ -34,6 +35,7 @@ CREATE TABLE audit_events (
 );
 CREATE INDEX audit_events_workspace_created_idx ON audit_events(workspace_id, created_at DESC);
 CREATE INDEX audit_events_workspace_broker_created_idx ON audit_events(workspace_id, broker_id, created_at, id);
+CREATE INDEX audit_events_actor_user_idx ON audit_events(actor_user_id);
 
 DO $$
 BEGIN
