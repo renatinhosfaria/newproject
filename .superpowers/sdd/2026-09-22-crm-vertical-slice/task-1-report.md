@@ -49,3 +49,23 @@ por isso o pnpm emitiu o aviso de engine em cada comando. Não há runtime Node
 
 Testes de integração não foram executados porque não há banco pronto e não há
 testes em `tests/integration` nesta entrega.
+
+## Fix report
+
+A revisão da Tarefa 1 corrigiu a verificação de `$ref` do teste OpenAPI. O
+validador Swagger resolve referências mutando o documento recebido; o teste
+agora valida uma cópia e conserva o YAML bruto para conferir as referências
+dos schemas.
+
+Verificações executadas com `npx --yes pnpm@11.27.1`:
+
+- `test:contract`: aprovado, 2 arquivos e 7 testes;
+- `test:unit`: aprovado, 1 arquivo e 1 teste;
+- `typecheck`, `lint` e `format:check`: aprovados;
+- `test`: falha explicitamente porque `DATABASE_URL` não está configurada;
+- `test:integration`: falha explicitamente pela mesma ausência de PostgreSQL.
+
+Limitações do ambiente: o Node disponível é `v26.7.0`, fora da faixa declarada
+`>=24.0.0 <25`, e não há executáveis PostgreSQL (`psql`/`postgres`) nem banco
+configurado neste checkout. A ausência de integração é reportada como falha,
+nunca como sucesso ou skip silencioso.

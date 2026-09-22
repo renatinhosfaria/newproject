@@ -152,9 +152,47 @@ agent_id
 hermes_session_id
 title
 status: active | stopped | completed | failed
+runs: AgentRun[]
 created_at
 updated_at
 ```
+
+### `agent_runs` (ciclo atual)
+
+Execuções assíncronas de uma sessão de Agent. A execução pode falhar sem
+alterar o estado de uma mensagem quando não houver mensagem de domínio
+associada.
+
+```text
+run_id
+session_id
+status: queued | running | completed | failed | cancelled
+input_content
+result nullable: AgentResult
+error_code nullable
+created_at
+updated_at
+```
+
+### `agent_events` (ciclo atual)
+
+Eventos persistidos para replay SSE e auditoria da execução.
+
+```text
+id
+workspace_id
+broker_id
+request_id
+run_id
+session_id
+sequence >= 1
+type
+payload
+occurred_at
+```
+
+O DTO público `AgentEvent` expõe `data` como alias de `payload`; o contexto de
+workspace e corretor continua sendo preenchido pelo servidor.
 
 ### `outbox_messages` (roadmap)
 
@@ -194,12 +232,14 @@ created_at
 
 ```text
 users 1──1 brokers
-brokers 1──1 hermes_profiles
-brokers 1──1 whatsapp_connections
+brokers 1──1 hermes_profiles (roadmap)
+brokers 1──1 whatsapp_connections (roadmap)
 brokers 1──N leads
 leads 1──N conversations
 conversations 1──N messages
 conversations 1──N agent_sessions
+agent_sessions 1──N agent_runs
+agent_runs 1──N agent_events
 messages 1──0..1 outbox_messages
 ```
 

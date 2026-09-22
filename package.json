@@ -9,13 +9,13 @@
     "pnpm": ">=11.27.1 <12"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "node scripts/run-test-suite.mjs",
     "test:contract": "vitest run tests/contracts",
     "test:unit": "vitest run tests/unit",
-    "test:integration": "vitest run --project integration",
+    "test:integration": "node scripts/run-integration-tests.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint packages tests vitest.config.ts",
-    "format:check": "prettier --check packages tests package.json pnpm-workspace.yaml tsconfig.json vitest.config.ts"
+    "format:check": "prettier --check packages scripts tests .prettierrc.json package.json pnpm-workspace.yaml tsconfig.base.json tsconfig.json vitest.config.ts"
   },
   "devDependencies": {
     "@apidevtools/swagger-parser": "13.1.0",

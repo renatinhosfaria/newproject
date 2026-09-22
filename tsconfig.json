@@ -1,11 +1,6 @@
 {
+  "extends": "./tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
     "noEmit": true,
     "baseUrl": ".",
     "paths": { "@pacaembu/contracts": ["packages/contracts/src/index.ts"] }

@@ -23,68 +23,68 @@ O banco deve possuir uma fronteira explícita de workspace, mesmo que o MVP come
 
 ### `workspaces`
 
-| Campo | Tipo | Regra |
-|---|---|---|
-| `id` | uuid | PK |
-| `name` | varchar(160) | obrigatório |
-| `timezone` | varchar(64) | default `America/Sao_Paulo` |
-| `status` | enum | `active` ou `suspended` |
-| `created_at` | timestamptz | obrigatório |
-| `updated_at` | timestamptz | obrigatório |
+| Campo        | Tipo         | Regra                       |
+| ------------ | ------------ | --------------------------- |
+| `id`         | uuid         | PK                          |
+| `name`       | varchar(160) | obrigatório                 |
+| `timezone`   | varchar(64)  | default `America/Sao_Paulo` |
+| `status`     | enum         | `active` ou `suspended`     |
+| `created_at` | timestamptz  | obrigatório                 |
+| `updated_at` | timestamptz  | obrigatório                 |
 
 ### `users`
 
-| Campo | Tipo | Regra |
-|---|---|---|
-| `id` | uuid | PK |
-| `name` | varchar(160) | obrigatório |
-| `email` | citext | único global, normalizado |
-| `password_hash` | text | Argon2id; nunca retornar |
-| `status` | enum | `invited`, `active` ou `suspended` |
-| `created_at` | timestamptz | obrigatório |
-| `updated_at` | timestamptz | obrigatório |
+| Campo           | Tipo         | Regra                              |
+| --------------- | ------------ | ---------------------------------- |
+| `id`            | uuid         | PK                                 |
+| `name`          | varchar(160) | obrigatório                        |
+| `email`         | citext       | único global, normalizado          |
+| `password_hash` | text         | Argon2id; nunca retornar           |
+| `status`        | enum         | `invited`, `active` ou `suspended` |
+| `created_at`    | timestamptz  | obrigatório                        |
+| `updated_at`    | timestamptz  | obrigatório                        |
 
 ### `workspace_memberships`
 
-| Campo | Tipo | Regra |
-|---|---|---|
-| `id` | uuid | PK |
-| `workspace_id` | uuid | FK para `workspaces` |
-| `user_id` | uuid | FK para `users` |
-| `role` | enum | `broker` ou `supervisor` |
-| `status` | enum | `invited`, `active` ou `suspended` |
-| `created_at` | timestamptz | obrigatório |
-| `updated_at` | timestamptz | obrigatório |
+| Campo          | Tipo        | Regra                              |
+| -------------- | ----------- | ---------------------------------- |
+| `id`           | uuid        | PK                                 |
+| `workspace_id` | uuid        | FK para `workspaces`               |
+| `user_id`      | uuid        | FK para `users`                    |
+| `role`         | enum        | `broker` ou `supervisor`           |
+| `status`       | enum        | `invited`, `active` ou `suspended` |
+| `created_at`   | timestamptz | obrigatório                        |
+| `updated_at`   | timestamptz | obrigatório                        |
 
 Restrições: `unique(workspace_id, user_id)` e no máximo uma membership ativa de cada papel operacional por regra de negócio.
 
 ### `brokers`
 
-| Campo | Tipo | Regra |
-|---|---|---|
-| `id` | uuid | PK |
-| `workspace_id` | uuid | FK obrigatório |
-| `user_id` | uuid | FK único por workspace |
-| `display_name` | varchar(160) | obrigatório |
-| `registration_code` | varchar(80) | opcional; único quando presente no workspace |
-| `status` | enum | `onboarding`, `active`, `suspended` ou `offboarded` |
-| `created_at` | timestamptz | obrigatório |
-| `updated_at` | timestamptz | obrigatório |
+| Campo               | Tipo         | Regra                                               |
+| ------------------- | ------------ | --------------------------------------------------- |
+| `id`                | uuid         | PK                                                  |
+| `workspace_id`      | uuid         | FK obrigatório                                      |
+| `user_id`           | uuid         | FK único por workspace                              |
+| `display_name`      | varchar(160) | obrigatório                                         |
+| `registration_code` | varchar(80)  | opcional; único quando presente no workspace        |
+| `status`            | enum         | `onboarding`, `active`, `suspended` ou `offboarded` |
+| `created_at`        | timestamptz  | obrigatório                                         |
+| `updated_at`        | timestamptz  | obrigatório                                         |
 
 ## Autenticação
 
 ### `auth_sessions`
 
-| Campo | Tipo | Regra |
-|---|---|---|
-| `id` | uuid | PK; valor opaco no cookie |
-| `user_id` | uuid | FK |
-| `workspace_id` | uuid | FK |
-| `token_hash` | text | único; nunca guardar token puro |
-| `expires_at` | timestamptz | obrigatório |
-| `last_seen_at` | timestamptz | obrigatório |
-| `revoked_at` | timestamptz | nullable |
-| `created_at` | timestamptz | obrigatório |
+| Campo          | Tipo        | Regra                           |
+| -------------- | ----------- | ------------------------------- |
+| `id`           | uuid        | PK; valor opaco no cookie       |
+| `user_id`      | uuid        | FK                              |
+| `workspace_id` | uuid        | FK                              |
+| `token_hash`   | text        | único; nunca guardar token puro |
+| `expires_at`   | timestamptz | obrigatório                     |
+| `last_seen_at` | timestamptz | obrigatório                     |
+| `revoked_at`   | timestamptz | nullable                        |
+| `created_at`   | timestamptz | obrigatório                     |
 
 Índices: `user_id`, `workspace_id`, `expires_at` e `token_hash`. Sessões expiradas devem ser removidas por job seguro.
 
@@ -132,11 +132,30 @@ Restrições:
 - mensagens recebidas devem ser persistidas antes de iniciar processamento repetível;
 - alterações de estado devem ser monotônicas, salvo uma transição explícita de cancelamento.
 
-### `agent_sessions`
+### `agent_sessions` (ciclo atual)
 
-Campos: `id`, `workspace_id`, `broker_id`, `user_id`, `agent_id`, `hermes_session_id`, `lead_id`, `conversation_id`, `title`, `status`, `created_at`, `updated_at`.
+Campos: `id`, `workspace_id`, `broker_id`, `user_id`, `agent_id`, `lead_id`, `conversation_id`, `title`, `status`, `created_at`, `updated_at`.
 
-Restrições: o usuário, lead e conversa precisam estar no escopo do broker; `hermes_session_id` não é exposto como identificador de autorização.
+Restrições: o usuário, lead e conversa precisam estar no escopo do broker.
+
+### `agent_runs` (ciclo atual)
+
+Campos: `run_id`, `session_id`, `status`, `input_content`, `result_json`, `error_code`, `created_at`, `updated_at`.
+
+Estados: `queued`, `running`, `completed`, `failed`, `cancelled`.
+
+Cada execução pertence a uma sessão autorizada. `result_json` pode ser nulo
+enquanto a execução estiver pendente; uma falha de execução sem mensagem de
+domínio não cria uma transição de `messages`.
+
+### `agent_events` (ciclo atual)
+
+Campos: `id`, `workspace_id`, `broker_id`, `request_id`, `run_id`,
+`session_id`, `sequence`, `type`, `payload`, `occurred_at`.
+
+Restrições: `unique(run_id, sequence)`; `sequence >= 1`; replay deve respeitar
+o workspace, broker e sessão autenticada. O DTO SSE usa `data` como alias
+público de `payload`.
 
 ### `outbox_messages` (roadmap)
 
@@ -164,9 +183,12 @@ As tabelas abaixo não bloqueiam o primeiro vertical slice e devem entrar quando
 ## Índices mínimos
 
 - todos os FKs;
-- `(workspace_id, status)` em usuários, brokers, perfis e conexões;
+- `(workspace_id, status)` em usuários, brokers, perfis e conexões
+  (perfis e conexões são roadmap);
 - `(broker_id, updated_at desc)` em leads, conversas e sessões;
 - `(conversation_id, occurred_at)` em mensagens;
+- `(session_id, created_at desc)` em Agent runs;
+- `(run_id, sequence)` em Agent events;
 - `(broker_id, status, next_attempt_at)` em outbox;
 - `(workspace_id, created_at desc)` em auditoria;
 - índices parciais para valores únicos que aceitem `NULL`.
@@ -174,10 +196,11 @@ As tabelas abaixo não bloqueiam o primeiro vertical slice e devem entrar quando
 ## Migrations e transações
 
 1. criar `workspaces`, `users`, memberships e sessões;
-2. criar brokers e perfil Hermes;
+2. criar brokers;
 3. criar leads, conversas e mensagens;
-4. criar auditoria; outbox só entra no ciclo de integração;
-5. adicionar índices e constraints depois das tabelas-base;
-6. cada migration deve ser reversível quando a operação for segura;
-7. seeds de desenvolvimento nunca podem conter credenciais reais;
-8. alterações de mensagem e criação de outbox devem ocorrer na mesma transação quando uma aprovação gerar envio.
+4. criar Agent sessions, runs e events;
+5. criar auditoria; outbox só entra no ciclo de integração;
+6. adicionar índices e constraints depois das tabelas-base;
+7. cada migration deve ser reversível quando a operação for segura;
+8. seeds de desenvolvimento nunca podem conter credenciais reais;
+9. alterações de mensagem e criação de outbox devem ocorrer na mesma transação quando uma aprovação gerar envio.
