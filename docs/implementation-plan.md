@@ -11,6 +11,12 @@ Entregáveis:
 - pipeline básico de lint, testes e build;
 - estrutura dos perfis Hermes de desenvolvimento;
 - registro de decisões arquiteturais.
+- ADR da stack tecnológica;
+- contrato OpenAPI da API;
+- especificação do schema e migrations planejadas;
+- matriz de autorização;
+- especificação dos Agents;
+- estratégia de testes.
 
 Critério de conclusão: o projeto sobe localmente com um CRM vazio e um perfil Hermes de teste.
 

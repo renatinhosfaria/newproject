@@ -12,6 +12,12 @@ Documentação inicial da arquitetura do CRM e da integração com o Hermes Agen
 - [Modelo de dados](./data-model.md)
 - [Plano de implementação](./implementation-plan.md)
 - [ADR 001 — perfil Hermes por corretor](./adr/001-hermes-profile-per-broker.md)
+- [ADR 002 — stack tecnológica](./adr/002-stack-tecnologica.md)
+- [Contrato OpenAPI da API](./api/openapi.yaml)
+- [Especificação do schema do banco](./database-schema.md)
+- [Matriz de autorização](./authorization-matrix.md)
+- [Especificação dos Agents](./agents-spec.md)
+- [Estratégia de testes](./testing-strategy.md)
 
 ## Decisões atuais
 
