@@ -3,6 +3,7 @@ import type { Clock } from "./clock.js";
 import { Module } from "@nestjs/common";
 import { HealthController } from "./http/health.controller.js";
 import { AuthModule } from "./auth/auth.module.js";
+import { IdempotencyService } from "./idempotency/idempotency.service.js";
 import type { DynamicModule } from "@nestjs/common";
 
 @Module({
@@ -15,6 +16,7 @@ export class AppModule {
       module: AppModule,
       imports: [AuthModule.forRoot(config, clock)],
       controllers: [HealthController],
+      providers: [IdempotencyService],
     };
   }
 }

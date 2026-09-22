@@ -49,6 +49,7 @@ export async function migrate(
       "0006_auth_broker_lookup.sql",
       "0007_harden_auth_lookup.sql",
       "0008_schema_scoped_auth.sql",
+      "0009_idempotency_rls.sql",
     ]) {
       const version = file.slice(0, 4);
       const check = await client.query(
