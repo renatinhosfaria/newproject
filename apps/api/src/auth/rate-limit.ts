@@ -7,28 +7,30 @@ interface Bucket {
 }
 
 export class LoginRateLimiter {
-  private readonly byEmail = new Map<string, Bucket>();
-  private readonly byIp = new Map<string, Bucket>();
+  private readonly byKey = new Map<string, Bucket>();
   constructor(
     private readonly clock: Clock,
     private readonly maxPerEmail = 10,
     private readonly maxPerIp = 100,
   ) {}
 
-  check(ip: string, email: string): void {
+  check(clientIp: string, email: string): void {
     const now = this.clock.now().getTime();
-    const emailBucket = this.take(
-      this.byEmail,
-      email.trim().toLowerCase(),
+    const normalizedEmail = email.trim().toLowerCase();
+    const pair = this.take(
+      this.byKey,
+      `${clientIp}\u0000${normalizedEmail}`,
       now,
       this.maxPerEmail,
     );
-    const ipBucket = this.take(this.byIp, ip, now, this.maxPerIp);
-    if (
-      emailBucket.count > this.maxPerEmail ||
-      ipBucket.count > this.maxPerIp
-    ) {
-      const resetAt = Math.max(emailBucket.resetAt, ipBucket.resetAt);
+    const ipBucket = this.take(
+      this.byKey,
+      `ip\u0000${clientIp}`,
+      now,
+      this.maxPerIp,
+    );
+    if (pair.count > this.maxPerEmail || ipBucket.count > this.maxPerIp) {
+      const resetAt = Math.max(pair.resetAt, ipBucket.resetAt);
       const error = problem(429, "RATE_LIMITED", undefined, true);
       (error as ProblemWithRetry).retryAfter = Math.max(
         1,

@@ -12,6 +12,7 @@ export interface AuthenticatedRequest {
   user?: import("@pacaembu/contracts").SessionUser;
   sessionToken?: string;
   id?: string;
+  ip?: string;
 }
 
 @Injectable()

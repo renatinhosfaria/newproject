@@ -8,6 +8,7 @@ import { ManualClock } from "./clock.js";
 import type { Fixture, Fixtures } from "./fixtures.js";
 import { createApp } from "../../apps/api/src/app.js";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import argon2 from "argon2";
 
 export interface TestHarness {
   db: Db;
@@ -304,9 +305,14 @@ async function upsertUser(
   name: string,
   email: string,
 ): Promise<string> {
+  const passwordHash = await argon2.hash(
+    email.startsWith("supervisor")
+      ? "test-supervisor-password"
+      : "test-broker-password",
+  );
   const result = await pool.query(
-    "INSERT INTO users (id,name,email,password_hash,status) VALUES ($1,$2,$3,'test-only-hash','active') ON CONFLICT (email) DO UPDATE SET name=EXCLUDED.name, status=EXCLUDED.status RETURNING id",
-    [id, name, email],
+    "INSERT INTO users (id,name,email,password_hash,status) VALUES ($1,$2,$3,$4,'active') ON CONFLICT (email) DO UPDATE SET name=EXCLUDED.name, password_hash=EXCLUDED.password_hash, status=EXCLUDED.status RETURNING id",
+    [id, name, email, passwordHash],
   );
   return result.rows[0].id;
 }

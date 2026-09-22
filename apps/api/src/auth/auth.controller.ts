@@ -37,10 +37,7 @@ export class AuthController {
     @Res() reply: FastifyReply,
   ) {
     const input = LoginRequestSchema.parse(body) as LoginRequest;
-    const ip =
-      headers["x-forwarded-for"]?.split(",")[0]?.trim() ??
-      headers["x-real-ip"] ??
-      "unknown";
+    const ip = req.ip ?? "unknown";
     // Keep the limiter key identical to the canonical login identity.
     this.limiter.check(ip, input.email.trim().toLowerCase());
     const result = await this.auth.login(input, requestIdOf(req));
