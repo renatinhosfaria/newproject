@@ -69,3 +69,10 @@ Limitações do ambiente: o Node disponível é `v26.7.0`, fora da faixa declara
 `>=24.0.0 <25`, e não há executáveis PostgreSQL (`psql`/`postgres`) nem banco
 configurado neste checkout. A ausência de integração é reportada como falha,
 nunca como sucesso ou skip silencioso.
+
+## Fix report — rodada 2
+
+`docs/implementation-plan.md` foi alinhado ao escopo do ciclo atual: a Fase 0
+não exige mais estrutura nem perfil Hermes, e seu critério de conclusão passou
+a exigir apenas CRM vazio, contratos verificáveis e base de testes preparada.
+As fases posteriores de Hermes e WhatsApp permanecem preservadas como roadmap.

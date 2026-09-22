@@ -9,7 +9,6 @@ Entregáveis:
 - variáveis de ambiente documentadas;
 - migrações do banco;
 - pipeline básico de lint, testes e build;
-- estrutura dos perfis Hermes de desenvolvimento;
 - registro de decisões arquiteturais.
 - ADR da stack tecnológica;
 - contrato OpenAPI da API;
@@ -18,7 +17,9 @@ Entregáveis:
 - especificação dos Agents;
 - estratégia de testes.
 
-Critério de conclusão: o projeto sobe localmente com um CRM vazio e um perfil Hermes de teste.
+Critério de conclusão: o projeto sobe localmente com um CRM vazio, contratos
+verificáveis e a base de testes preparada. Perfis Hermes e a integração com
+WhatsApp ficam para as fases posteriores deste roadmap.
 
 ## Fase 1 — Fundação do CRM
 
