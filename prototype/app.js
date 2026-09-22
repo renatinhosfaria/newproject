@@ -3,7 +3,8 @@ const agents = [
   { id: "followup", name: "Follow-up", short: "Aquecimento de carteira", letter: "F", tone: "blue", status: "online", sessions: 5 },
   { id: "trafego-pago", name: "Tráfego pago", short: "Meta Ads e campanhas", letter: "T", tone: "orange", status: "online", sessions: 2 },
   { id: "trafego-organico", name: "Tráfego orgânico", short: "Instagram e conteúdo", letter: "O", tone: "green", status: "online", sessions: 1 },
-  { id: "criativos", name: "Criativos", short: "Imagem e vídeo", letter: "C", tone: "pink", status: "online", sessions: 4 },
+  { id: "criativos-imagem", name: "Criativos de imagem", short: "Peças estáticas e anúncios", letter: "I", tone: "pink", status: "online", sessions: 4 },
+  { id: "criativos-video", name: "Criativos de vídeo", short: "Roteiros e cortes", letter: "V", tone: "orange", status: "online", sessions: 3 },
   { id: "performance", name: "Análise de desempenho", short: "KPIs e recomendações", letter: "P", tone: "purple", status: "online", sessions: 2 }
 ];
 
@@ -24,12 +25,15 @@ const baseMessages = [
   { role: "assistant", time: "09:44", text: "Preparei uma sugestão com linguagem acolhedora, sem prometer condições que ainda não foram confirmadas. Também sinalizei as informações que precisam ser coletadas antes da simulação." }
 ];
 
+const sessionStore = OrbitState.createStore(agents, baseMessages);
+
 const state = {
   view: "dashboard",
-  activeAgent: "atendimento",
+  activeAgent: sessionStore.activeAgentId,
+  activeSessionId: sessionStore.activeSessionId,
   leadQuery: "",
   selectedLead: 1,
-  messages: JSON.parse(JSON.stringify(baseMessages)),
+  messages: OrbitState.activeSession(sessionStore).messages,
   pendingReply: false,
   toastTimer: null
 };
@@ -89,6 +93,17 @@ function getLead(id) {
 
 function activeAgent() {
   return agents.find(function (agent) { return agent.id === state.activeAgent; }) || agents[0];
+}
+
+function syncActiveSession() {
+  state.activeAgent = sessionStore.activeAgentId;
+  state.activeSessionId = sessionStore.activeSessionId;
+  const session = OrbitState.activeSession(sessionStore);
+  state.messages = session ? session.messages : [];
+}
+
+function activeAgentSessions() {
+  return sessionStore.sessions[state.activeAgent] || [];
 }
 
 function avatar(initials, tone, large) {
@@ -188,17 +203,19 @@ function renderAgents() {
   const agent = activeAgent();
   const selected = getLead(state.selectedLead);
   const messages = state.messages;
-  return pageHeader("Central de inteligência", "Agents", "Converse com especialistas que conhecem seu produto, sua carteira e sua estratégia.", '<span class="status-tag success"><i></i> 6 agents online</span><button class="button button-primary" data-toast="Nova sessão criada no protótipo">' + icon("plus", 15) + " Nova sessão</button>") +
-    '<div class="agents-shell"><aside class="agent-rail"><div class="agent-tabs"><button class="agent-tab active">AGENTS</button><button class="agent-tab" data-toast="Sessões disponíveis no ambiente conectado">SESSIONS</button></div><div class="agent-rail-head"><span>ESPECIALISTAS</span><div class="rail-actions"><button data-toast="Busca de agents">⌕</button><button data-toast="Catálogo de agents">+</button></div></div><div class="agent-list">' + agents.map(function (item) {
-      return '<button class="agent-list-item ' + (item.id === agent.id ? "active" : "") + '" data-agent="' + item.id + '"><span class="agent-avatar ' + item.tone + '">' + item.letter + '</span><span class="agent-list-copy"><strong>' + item.name + '</strong><small>' + item.short + '</small></span><i class="agent-status ' + item.status + '"></i></button>';
-    }).join("") + '</div><div class="agent-rail-footer"><strong>Ambiente do corretor</strong><br/>Sessões e contexto isolados por usuário.</div></aside>' +
-    '<section class="agent-chat"><div class="chat-header"><div class="chat-agent-meta"><span class="agent-avatar ' + agent.tone + '">' + agent.letter + '</span><div><h2>' + agent.name + '</h2><p>Especialista online · contexto da sua carteira ativo</p></div></div><div class="chat-header-actions"><button data-toast="Compartilhar sessão">↗</button><button data-toast="Configurações do agent">⚙</button><button data-toast="Mais opções">•••</button></div></div><div class="session-strip"><button class="session-tab active"><i></i><span>Juliana · primeiro contato</span></button><button class="session-tab" data-toast="Nova sessão em breve">+</button></div><div class="chat-messages"><div class="date-divider">Hoje · 20 de setembro</div>' + messages.map(messageBubble).join("") + (state.pendingReply ? '<div class="message-row"><span class="message-avatar agent">A</span><div class="message-content"><div class="message-name">Atendimento <span>agora</span></div><div class="message-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></div></div></div>' : "") + '</div><div class="chat-composer-wrap"><div class="quick-prompts"><button class="quick-prompt" data-prompt="Faça um resumo dos próximos leads que precisam de resposta hoje.">Resumo do dia</button><button class="quick-prompt" data-prompt="Prepare uma resposta acolhedora para a Juliana sobre entrada e parcelas.">Preparar resposta</button><button class="quick-prompt" data-prompt="Quais informações ainda faltam para uma simulação?">Checklist da simulação</button></div><div class="composer"><textarea id="agentComposer" rows="1" placeholder="Escreva uma tarefa para o agent..."></textarea><div class="composer-tools"><button data-toast="Anexos em breve">⌕</button><button data-toast="Microfone em breve">◉</button><button class="send-button" data-action="send-agent" aria-label="Enviar">' + icon("send", 14) + '</button></div></div><div class="composer-hint"><span>O agent sugere. Você decide.</span><span>Enter para enviar · Shift + Enter para nova linha</span></div></div></section>' +
-    '<aside class="context-panel"><div class="context-heading"><h3>Contexto da sessão</h3><button data-toast="Painel fixado">⌁</button></div><div class="context-section"><div class="context-card"><div class="lead-context-head">' + avatar(selected.initials, selected.tone) + '<div><strong>' + selected.name + '</strong><small>Lead selecionado</small></div><span class="status-tag success" style="margin-left:auto"><i></i>Quente</span></div><div class="context-data"><div class="context-data-row"><span>Origem</span><strong>' + selected.source + '</strong></div><div class="context-data-row"><span>Interesse</span><strong>' + selected.interest + '</strong></div><div class="context-data-row"><span>Estágio</span><strong>Novos</strong></div><div class="context-data-row"><span>Último contato</span><strong>' + selected.last + '</strong></div></div><div class="context-divider"></div><button class="context-action" data-view="leads"><span class="action-icon">♙</span>Abrir ficha completa ' + icon("external", 13) + "</button></div></div><div class=\"context-section\"><div class=\"context-heading\" style=\"padding:4px 0 11px\"><h3>Capacidades ativas</h3></div><div class=\"context-card\"><span class=\"skill-chip\"><i></i>Leitura do CRM</span><span class=\"skill-chip\"><i></i>Roteiro de atendimento</span><span class=\"skill-chip\"><i></i>Produto aprovado</span><span class=\"skill-chip\"><i></i>Tom consultivo</span></div></div><div class=\"context-section\"><div class=\"approval-banner\"><span class=\"action-icon\">!</span><span>Mensagens de WhatsApp ficam como rascunho até você aprovar.</span></div></div></aside></div>";
+  const sessions = activeAgentSessions();
+  return pageHeader("Central de inteligência", "Agents", "Converse com especialistas que conhecem seu produto, sua carteira e sua estratégia.", `<span class="status-tag success"><i></i> ${agents.length} agents online</span><button class="button button-primary" data-action="new-session">${icon("plus", 15)} Nova sessão</button>`) +
+    `<div class="agent-mobile-switcher"><label for="mobileAgentSelect">Especialista ativo</label><select id="mobileAgentSelect" data-agent-select>${agents.map(function (item) { return `<option value="${item.id}"${item.id === agent.id ? " selected" : ""}>${item.name}</option>`; }).join("")}</select></div>` +
+    `<div class="agents-shell"><aside class="agent-rail"><div class="agent-tabs"><button class="agent-tab active">AGENTS</button><button class="agent-tab" data-toast="Sessões disponíveis no ambiente conectado">SESSIONS</button></div><div class="agent-rail-head"><span>ESPECIALISTAS</span><div class="rail-actions"><button data-toast="Busca de agents">⌕</button><button data-toast="Catálogo de agents">+</button></div></div><div class="agent-list">${agents.map(function (item) {
+      return `<button class="agent-list-item ${item.id === agent.id ? "active" : ""}" data-agent="${item.id}"><span class="agent-avatar ${item.tone}">${item.letter}</span><span class="agent-list-copy"><strong>${item.name}</strong><small>${item.short}</small></span><i class="agent-status ${item.status}"></i></button>`;
+    }).join("")}</div><div class="agent-rail-footer"><strong>Ambiente do corretor</strong><br/>Sessões e contexto isolados por usuário.</div></aside>` +
+    `<section class="agent-chat"><div class="chat-header"><div class="chat-agent-meta"><span class="agent-avatar ${agent.tone}">${agent.letter}</span><div><h2>${agent.name}</h2><p>Especialista online · contexto da sua carteira ativo</p></div></div><div class="chat-header-actions"><button data-toast="Compartilhar sessão">↗</button><button data-toast="Configurações do agent">⚙</button><button data-toast="Mais opções">•••</button></div></div><div class="session-strip">${sessions.map(function (session) { return `<button class="session-tab ${session.id === state.activeSessionId ? "active" : ""}" data-session="${session.id}"><i></i><span>${escapeHtml(session.title)}</span></button>`; }).join("")}<button class="session-tab new-session-tab" data-action="new-session" aria-label="Nova sessão">+</button></div><div class="chat-messages"><div class="date-divider">Hoje · 21 de setembro</div>${messages.map(function (message) { return messageBubble(message, agent); }).join("")}${state.pendingReply ? `<div class="message-row"><span class="message-avatar agent">${agent.letter}</span><div class="message-content"><div class="message-name">${agent.name} <span>agora</span></div><div class="message-bubble"><span class="typing-dots"><i></i><i></i><i></i></span></div></div></div>` : ""}</div><div class="chat-composer-wrap"><div class="quick-prompts"><button class="quick-prompt" data-prompt="Faça um resumo dos próximos leads que precisam de resposta hoje.">Resumo do dia</button><button class="quick-prompt" data-prompt="Prepare uma resposta acolhedora para a Juliana sobre entrada e parcelas.">Preparar resposta</button><button class="quick-prompt" data-prompt="Quais informações ainda faltam para uma simulação?">Checklist da simulação</button></div><div class="composer"><textarea id="agentComposer" rows="1" placeholder="Escreva uma tarefa para o agent..."></textarea><div class="composer-tools"><button data-toast="Anexos em breve">⌕</button><button data-toast="Microfone em breve">◉</button><button class="send-button" data-action="send-agent" aria-label="Enviar">${icon("send", 14)}</button></div></div><div class="composer-hint"><span>O agent orienta; a política de execução será definida pelo workspace.</span><span>Enter para enviar · Shift + Enter para nova linha</span></div></div></section>` +
+    `<aside class="context-panel"><div class="context-heading"><h3>Contexto da sessão</h3><button data-toast="Painel fixado">⌁</button></div><div class="context-section"><div class="context-card"><div class="lead-context-head">${avatar(selected.initials, selected.tone)}<div><strong>${selected.name}</strong><small>Lead selecionado</small></div><span class="status-tag success" style="margin-left:auto"><i></i>Quente</span></div><div class="context-data"><div class="context-data-row"><span>Origem</span><strong>${selected.source}</strong></div><div class="context-data-row"><span>Interesse</span><strong>${selected.interest}</strong></div><div class="context-data-row"><span>Estágio</span><strong>Novos</strong></div><div class="context-data-row"><span>Último contato</span><strong>${selected.last}</strong></div></div><div class="context-divider"></div><button class="context-action" data-view="leads"><span class="action-icon">♙</span>Abrir ficha completa ${icon("external", 13)}</button></div></div><div class="context-section"><div class="context-heading" style="padding:4px 0 11px"><h3>Capacidades ativas</h3></div><div class="context-card"><span class="skill-chip"><i></i>Leitura do CRM</span><span class="skill-chip"><i></i>Roteiro de atendimento</span><span class="skill-chip"><i></i>Produto aprovado</span><span class="skill-chip"><i></i>Tom consultivo</span></div></div><div class="context-section"><div class="approval-banner"><span class="action-icon">!</span><span>Envio de WhatsApp e escrita no CRM aguardam a política do workspace.</span></div></div></aside></div>`;
 }
 
-function messageBubble(message) {
+function messageBubble(message, agent) {
   const isUser = message.role === "user";
-  return '<div class="message-row ' + (isUser ? "user" : "") + '"><span class="message-avatar ' + (isUser ? "user" : "agent") + '">' + (isUser ? "RF" : "A") + '</span><div class="message-content"><div class="message-name">' + (isUser ? "Você" : "Atendimento") + '<span>' + message.time + '</span></div><div class="message-bubble">' + escapeHtml(message.text) + (message.insight ? '<div class="insight-card"><strong>Leitura rápida do contexto</strong><p>Perfil com intenção de compra alta. Priorize clareza sobre entrada, prazo e próximos passos.</p></div>' : "") + '</div><div class="message-time">' + (isUser ? "Enviado" : "Resposta do agent") + "</div></div></div>";
+  return `<div class="message-row ${isUser ? "user" : ""}"><span class="message-avatar ${isUser ? "user" : "agent"}">${isUser ? "RF" : agent.letter}</span><div class="message-content"><div class="message-name">${isUser ? "Você" : agent.name}<span>${message.time}</span></div><div class="message-bubble">${escapeHtml(message.text)}${message.insight ? '<div class="insight-card"><strong>Leitura rápida do contexto</strong><p>Perfil com intenção de compra alta. Priorize clareza sobre entrada, prazo e próximos passos.</p></div>' : ""}</div><div class="message-time">${isUser ? "Enviado" : "Resposta do agent"}</div></div></div>`;
 }
 
 function miniChart(color) {
@@ -258,7 +275,7 @@ function renderManagement() {
 function renderSettings() {
   const actions = '<button class="button button-primary" data-toast="Alterações salvas no protótipo">✓ Salvar alterações</button>';
   return pageHeader("Preferências do workspace", "Configurações", "Ajuste o ambiente do corretor e as regras de interação com os agents.", actions) +
-    '<div class="grid-1-1"><section class="card detail-pane"><h2 class="card-title">Perfil e workspace</h2><p class="page-subtitle" style="margin-top:7px">Dados mocados para o protótipo navegável.</p><div class="modal-form"><div class="field"><label>Nome do workspace</label><input value="Equipe Horizonte" /></div><div class="field"><label>Nome do supervisor</label><input value="Renato Faria" /></div><div class="field"><label>Fuso horário</label><select><option>America/Sao_Paulo (UTC−03:00)</option></select></div></div></section><section class="card detail-pane"><h2 class="card-title">Regras dos Agents</h2><p class="page-subtitle" style="margin-top:7px">O corretor decide antes do envio.</p><div class="context-data" style="margin-top:21px"><div class="context-data-row"><span>Mensagens de WhatsApp</span><strong class="status-tag warning">Aprovação</strong></div><div class="context-data-row"><span>Alterar campanha</span><strong class="status-tag">Sugestão</strong></div><div class="context-data-row"><span>Atualizar CRM</span><strong class="status-tag success">Permitido</strong></div><div class="context-data-row"><span>Compartilhar arquivo</span><strong class="status-tag">Aprovação</strong></div></div></section></div>';
+    '<div class="grid-1-1"><section class="card detail-pane"><h2 class="card-title">Perfil e workspace</h2><p class="page-subtitle" style="margin-top:7px">Dados mocados para o protótipo navegável.</p><div class="modal-form"><div class="field"><label>Nome do workspace</label><input value="Equipe Horizonte" /></div><div class="field"><label>Nome do supervisor</label><input value="Renato Faria" /></div><div class="field"><label>Fuso horário</label><select><option>America/Sao_Paulo (UTC−03:00)</option></select></div></div></section><section class="card detail-pane"><h2 class="card-title">Regras dos Agents</h2><p class="page-subtitle" style="margin-top:7px">Definições de execução serão configuradas antes da operação real.</p><div class="context-data" style="margin-top:21px"><div class="context-data-row"><span>Mensagens de WhatsApp</span><strong class="status-tag warning">Pendente</strong></div><div class="context-data-row"><span>Alterar campanha</span><strong class="status-tag">Pendente</strong></div><div class="context-data-row"><span>Atualizar CRM</span><strong class="status-tag">Pendente</strong></div><div class="context-data-row"><span>Compartilhar arquivo</span><strong class="status-tag">Pendente</strong></div></div></section></div>';
 }
 
 function render() {
@@ -279,31 +296,55 @@ function showToast(message) {
   state.toastTimer = setTimeout(function () { toast.classList.remove("visible"); }, 2700);
 }
 
+function closeModal() {
+  document.getElementById("modalRoot").innerHTML = "";
+}
+
 function showNewLeadModal() {
-  document.getElementById("modalRoot").innerHTML = '<div class="modal-backdrop" data-action="close-modal"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="newLeadTitle"><div class="modal-head"><div><h2 id="newLeadTitle">Adicionar novo lead</h2><p>Cadastre uma oportunidade na carteira mocada.</p></div><button class="modal-close" data-action="close-modal">×</button></div><div class="modal-form"><div class="field"><label>Nome completo</label><input id="newLeadName" placeholder="Ex.: Mariana Souza" autofocus /></div><div class="field"><label>Telefone</label><input placeholder="(00) 00000-0000" /></div><div class="field"><label>Origem</label><select><option>Meta Ads</option><option>Google</option><option>Orgânico</option><option>Indicação</option></select></div><div class="field"><label>Interesse</label><select><option>Residencial Horizonte</option><option>Jardim das Águas</option></select></div><div class="modal-actions"><button class="button button-secondary" data-action="close-modal">Cancelar</button><button class="button button-primary" data-action="submit-lead">Adicionar lead</button></div></div></section></div>';
+  document.getElementById("modalRoot").innerHTML = `<div class="modal-backdrop" data-modal-backdrop><section class="modal" role="dialog" aria-modal="true" aria-labelledby="newLeadTitle"><div class="modal-head"><div><h2 id="newLeadTitle">Adicionar novo lead</h2><p>Cadastre uma oportunidade na carteira mocada.</p></div><button class="modal-close" data-action="close-modal" aria-label="Fechar">×</button></div><div class="modal-form"><div class="field"><label for="newLeadName">Nome completo</label><input id="newLeadName" placeholder="Ex.: Mariana Souza" autofocus /></div><div class="field"><label for="newLeadPhone">Telefone</label><input id="newLeadPhone" placeholder="(00) 00000-0000" /></div><div class="field"><label for="newLeadSource">Origem</label><select id="newLeadSource"><option>Meta Ads</option><option>Google</option><option>Orgânico</option><option>Indicação</option></select></div><div class="field"><label for="newLeadInterest">Interesse</label><select id="newLeadInterest"><option>Residencial Horizonte</option><option>Jardim das Águas</option></select></div><div class="modal-actions"><button class="button button-secondary" data-action="close-modal">Cancelar</button><button class="button button-primary" data-action="submit-lead">Adicionar lead</button></div></div></section></div>`;
 }
 
 function submitLead() {
-  const input = document.getElementById("newLeadName");
-  const name = input && input.value.trim() ? input.value.trim() : "Novo lead";
+  const nameInput = document.getElementById("newLeadName");
+  const phoneInput = document.getElementById("newLeadPhone");
+  const sourceInput = document.getElementById("newLeadSource");
+  const interestInput = document.getElementById("newLeadInterest");
+  const name = nameInput && nameInput.value.trim() ? nameInput.value.trim() : "Novo lead";
+  const phone = phoneInput && phoneInput.value.trim() ? phoneInput.value.trim() : "Não informado";
+  const source = sourceInput ? sourceInput.value : "Meta Ads";
+  const interest = interestInput ? interestInput.value : "Residencial Horizonte";
+  const sourceTones = { "Meta Ads": "meta", Google: "google", "Orgânico": "organic", Indicação: "referral" };
   const initials = name.split(/\s+/).slice(0, 2).map(function (part) { return part[0]; }).join("").toUpperCase();
-  leads.unshift({ id: Date.now(), name: name, initials: initials, tone: "blue", source: "Meta Ads", sourceTone: "meta", stage: "novo", phone: "(16) 99999-0000", email: "novo.lead@email.com", interest: "Residencial Horizonte", value: "R$ 218.900", last: "agora", next: "Responder primeiro contato", score: "Novo", scoreTone: "warning" });
-  document.getElementById("modalRoot").innerHTML = "";
+  leads.unshift({ id: Date.now(), name: name, initials: initials, tone: "blue", source: source, sourceTone: sourceTones[source] || "meta", stage: "novo", phone: phone, email: "novo.lead@email.com", interest: interest, value: interest === "Jardim das Águas" ? "R$ 239.800" : "R$ 218.900", last: "agora", next: "Responder primeiro contato", score: "Novo", scoreTone: "warning" });
+  closeModal();
   state.view = "leads";
   render();
   showToast(name + " foi adicionado à sua carteira.");
+}
+
+function createNewSession() {
+  const nextNumber = activeAgentSessions().length + 1;
+  OrbitState.createSession(sessionStore, state.activeAgent, "Nova sessão " + nextNumber);
+  syncActiveSession();
+  state.view = "agents";
+  render();
+  showToast("Nova sessão criada para " + activeAgent().name + ".");
 }
 
 function sendAgentMessage() {
   const composer = document.getElementById("agentComposer");
   if (!composer || !composer.value.trim() || state.pendingReply) return;
   const text = composer.value.trim();
-  state.messages.push({ role: "user", time: "agora", text: text });
+  const targetSession = OrbitState.activeSession(sessionStore);
+  if (!targetSession) return;
+  targetSession.messages.push({ role: "user", time: "agora", text: text });
   state.pendingReply = true;
+  syncActiveSession();
   render();
   setTimeout(function () {
     state.pendingReply = false;
-    state.messages.push({ role: "assistant", time: "agora", text: "Entendido. Organizei a análise em um próximo passo claro e deixei a sugestão pronta para você revisar antes de qualquer envio." });
+    targetSession.messages.push({ role: "assistant", time: "agora", text: "Entendido. Organizei a análise em um próximo passo claro e deixei a sugestão pronta para você revisar antes de qualquer envio." });
+    syncActiveSession();
     render();
   }, 1000);
 }
@@ -313,7 +354,7 @@ document.addEventListener("click", function (event) {
   if (viewTarget) {
     event.preventDefault();
     state.view = viewTarget.dataset.view;
-    if (state.view === "agents" && !state.messages.length) state.messages = JSON.parse(JSON.stringify(baseMessages));
+    if (state.view === "agents") syncActiveSession();
     render();
     const sidebar = document.getElementById("sidebar");
     if (sidebar) sidebar.classList.remove("open");
@@ -321,7 +362,16 @@ document.addEventListener("click", function (event) {
   }
   const agentTarget = event.target.closest("[data-agent]");
   if (agentTarget) {
-    state.activeAgent = agentTarget.dataset.agent;
+    OrbitState.selectAgent(sessionStore, agentTarget.dataset.agent);
+    syncActiveSession();
+    state.view = "agents";
+    render();
+    return;
+  }
+  const sessionTarget = event.target.closest("[data-session]");
+  if (sessionTarget) {
+    OrbitState.selectSession(sessionStore, sessionTarget.dataset.session);
+    syncActiveSession();
     state.view = "agents";
     render();
     return;
@@ -342,7 +392,8 @@ document.addEventListener("click", function (event) {
   if (actionTarget) {
     const action = actionTarget.dataset.action;
     if (action === "new-lead") showNewLeadModal();
-    if (action === "close-modal") document.getElementById("modalRoot").innerHTML = "";
+    if (action === "new-session") createNewSession();
+    if (action === "close-modal") closeModal();
     if (action === "submit-lead") submitLead();
     if (action === "send-agent") sendAgentMessage();
     return;
@@ -352,7 +403,7 @@ document.addEventListener("click", function (event) {
     showToast(toastTarget.dataset.toast);
     return;
   }
-  if (event.target.classList.contains("modal-backdrop")) document.getElementById("modalRoot").innerHTML = "";
+  if (event.target.matches("[data-modal-backdrop]")) closeModal();
 });
 
 document.addEventListener("input", function (event) {
@@ -366,6 +417,15 @@ document.addEventListener("input", function (event) {
   }
 });
 
+document.addEventListener("change", function (event) {
+  if (event.target.matches("[data-agent-select]")) {
+    OrbitState.selectAgent(sessionStore, event.target.value);
+    syncActiveSession();
+    state.view = "agents";
+    render();
+  }
+});
+
 document.addEventListener("keydown", function (event) {
   if (event.key === "Enter" && event.target.id === "agentComposer" && !event.shiftKey) {
     event.preventDefault();
@@ -376,7 +436,7 @@ document.addEventListener("keydown", function (event) {
     const search = document.getElementById("globalSearch");
     if (search) search.focus();
   }
-  if (event.key === "Escape") document.getElementById("modalRoot").innerHTML = "";
+  if (event.key === "Escape") closeModal();
 });
 
 document.getElementById("mobileMenu").addEventListener("click", function () {
