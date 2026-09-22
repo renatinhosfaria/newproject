@@ -14,6 +14,11 @@ Implementação concluída no commit desta tarefa, com a estrutura de persistên
 
 Verificação deste round: `./node_modules/.bin/vitest run tests/unit tests/contracts` passou (3 arquivos/8 testes), ESLint passou, Prettier passou e `git diff --check` passou. `./node_modules/.bin/tsc --noEmit` continua bloqueado pelas dependências ausentes de Nest/pg/Drizzle/argon2. A integração não foi executada: o host não possui PostgreSQL nem Docker.
 
+## Fix round 2
+
+- `agent_sessions` agora tem `CHECK (membership_role = 'broker')`, além do default e da FK composta de membership, impedindo supervisor explícito.
+- Foram adicionados índices com prefixos exatos para as FKs compostas de membership, broker/usuário, agente, lead e conversa.
+
 ## Arquivos
 
 - `db/migrations/0001_identity.sql` a `0004_reliability.sql`: extensões, enums, 16 tabelas do ciclo, chaves compostas, índices, trigger de escopo de Agent, RLS/policies e grants para `pacaembu_app`.

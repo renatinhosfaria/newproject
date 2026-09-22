@@ -62,11 +62,15 @@ CREATE TABLE agent_sessions (
   FOREIGN KEY (workspace_id, agent_id) REFERENCES workspace_agents(workspace_id, agent_id),
   FOREIGN KEY (workspace_id, broker_id, lead_id) REFERENCES leads(workspace_id, broker_id, id),
   FOREIGN KEY (workspace_id, broker_id, conversation_id) REFERENCES conversations(workspace_id, broker_id, id),
+  CHECK (membership_role = 'broker'),
   CHECK (conversation_id IS NULL OR lead_id IS NOT NULL)
 );
 CREATE INDEX agent_sessions_broker_updated_idx ON agent_sessions(workspace_id, broker_id, updated_at DESC, id);
-CREATE INDEX agent_sessions_user_idx ON agent_sessions(user_id);
-CREATE INDEX agent_sessions_agent_idx ON agent_sessions(agent_id);
+CREATE INDEX agent_sessions_membership_user_idx ON agent_sessions(workspace_id, user_id, membership_role);
+CREATE INDEX agent_sessions_broker_user_idx ON agent_sessions(workspace_id, broker_id, user_id);
+CREATE INDEX agent_sessions_agent_scope_idx ON agent_sessions(workspace_id, agent_id);
+CREATE INDEX agent_sessions_lead_scope_idx ON agent_sessions(workspace_id, broker_id, lead_id);
+CREATE INDEX agent_sessions_conversation_scope_idx ON agent_sessions(workspace_id, broker_id, conversation_id);
 
 CREATE OR REPLACE FUNCTION assert_agent_session_scope() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN
