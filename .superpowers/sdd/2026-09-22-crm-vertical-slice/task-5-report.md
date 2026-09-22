@@ -46,3 +46,10 @@
 - Search escapes `%`, `_`, and backslash and passes the pattern as a SQL parameter, so wildcard-looking user input is treated as a value.
 - Lead audit metadata stores only `lead_id` and comma-separated changed field names; conversation audit metadata stores `conversation_id` and `lead_id`. Phone and email are not stored in audit metadata.
 - PATCH supports only the approved lead fields in `UpdateLeadRequestSchema`; no DELETE, send, admin, dashboard, export, outbox, WhatsApp, or Agent execution behavior was added.
+
+## Task 5 idempotent replay authorization fix
+
+- Added a `withWorkspaceContext` lead-scope check before `IdempotencyService.execute` in conversation creation. The existing check remains inside the transaction callback so a new INSERT is validated in the same transaction.
+- Added a regression that creates a conversation, removes the empty conversation and its lead through `ownerPool` (without changing the foreign-key definition), then replays the same key and input. The replay now returns `404 RESOURCE_NOT_FOUND` instead of the stale stored `201` response.
+- RED: `pnpm exec vitest run tests/integration/conversations.test.ts -t 'revalida acesso' --no-file-parallelism` — failed as expected with `expected 201 to be 404` when the pre-authorization was temporarily removed.
+- GREEN: `pnpm exec vitest run tests/integration/conversations.test.ts tests/integration/idempotency.test.ts tests/contracts --no-file-parallelism` — 4 files and 20 tests passed.

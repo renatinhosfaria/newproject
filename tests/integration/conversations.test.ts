@@ -96,6 +96,29 @@ describe("conversations HTTP", () => {
     );
   });
 
+  it("revalida acesso ao lead antes de devolver replay idempotente", async () => {
+    const cookie = await loginAs(h, h.fixtures.brokerA);
+    const lead = await createLead(cookie, "Lead Replay Revogado");
+    const key = "conversation-http-key-revoked";
+
+    const first = await expectConversation(cookie, lead.id, key, 201);
+    await h.ownerPool.query("DELETE FROM conversations WHERE id=$1", [
+      first.id,
+    ]);
+    await h.ownerPool.query("DELETE FROM leads WHERE id=$1", [lead.id]);
+
+    const replay = await h.http
+      .post("/api/conversations")
+      .set("Cookie", cookie)
+      .set("Origin", h.origin)
+      .set("Idempotency-Key", key)
+      .send({ lead_id: lead.id });
+
+    expect(replay.status).toBe(404);
+    expect(ProblemSchema.parse(replay.body).code).toBe("RESOURCE_NOT_FOUND");
+    expect(JSON.stringify(replay.body)).not.toContain(first.id);
+  });
+
   it("isola GET/lista/mensagens entre broker B e workspace C", async () => {
     const cookieA = await loginAs(h, h.fixtures.brokerA);
     const cookieB = await loginAs(h, h.fixtures.brokerB);

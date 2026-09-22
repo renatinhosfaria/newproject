@@ -55,6 +55,7 @@ export class ConversationsService {
     input: CreateConversationRequest,
     key: string,
   ): Promise<Conversation> {
+    await this.assertLeadCurrentlyAuthorized(ctx, input.lead_id);
     const result = await this.idempotency.execute(
       ctx,
       "POST /api/conversations",
@@ -97,6 +98,19 @@ export class ConversationsService {
       },
     );
     return result.body;
+  }
+
+  private async assertLeadCurrentlyAuthorized(
+    ctx: BrokerContext,
+    leadId: string,
+  ): Promise<void> {
+    await withWorkspaceContext(
+      this.db,
+      { workspaceId: ctx.workspace_id, brokerId: ctx.broker_id },
+      async (tx) => {
+        await this.assertLeadInScope(tx, ctx, leadId);
+      },
+    );
   }
 
   async list(
