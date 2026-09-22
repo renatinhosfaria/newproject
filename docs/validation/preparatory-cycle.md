@@ -22,4 +22,6 @@ Durante a validação, dois testes de integração excederam o timeout padrão d
 
 O daemon temporário respondeu pelo socket exclusivo e o smoke validou o empacotamento em execução. Após os testes, `docker ps -a` e `docker volume ls` no daemon isolado não listaram recursos restantes. A CI contém a mesma matriz e o smoke Compose; a execução remota da CI depende de publicar a branch, etapa fora deste plano.
 
+O comando `playwright install --with-deps chromium` atualizou quatro pacotes `libglib2.0` do host via apt; o `needrestart` reiniciou serviços de sistema associados. O comando terminou com exit 0. O daemon temporário foi encerrado e suas regras Docker de rede foram removidas após a validação.
+
 Não foi feito reset manual do banco. Os testes usam schemas efêmeros no banco terminado em `_test` e seus harnesses os removem ao concluir. A inspeção de `apps/api/src/agents` encontrou apenas o adapter determinístico e a porta Hermes, sem chamadas HTTP externas, modelo ou envio de WhatsApp neste ciclo.
