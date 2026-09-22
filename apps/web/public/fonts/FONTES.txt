@@ -1,0 +1,23 @@
+Fontes locais do CRM Web (sem download no build)
+
+Dongle 400/700 (subconjunto latin, woff2)
+  Origem: pacote npm @fontsource/dongle@5.3.0
+  Tarball: https://registry.npmjs.org/@fontsource/dongle/-/dongle-5.3.0.tgz
+  Integridade: sha512-zKJA8ZHQGdHE1q5GM4R3tiZrfClHuSalvTNZNFQ8jHYqxZ0XVblE6my4OiuGl8oAxiB9B+mpqb1mpoDOUeFD0g==
+  Projeto: https://github.com/yangheeryu/Dongle
+  Licença: SIL Open Font License 1.1 (OFL-Dongle.txt)
+
+Nunito Sans 400/600/700/800 (subconjunto latin, woff2)
+  Origem: pacote npm @fontsource/nunito-sans@5.3.0
+  Tarball: https://registry.npmjs.org/@fontsource/nunito-sans/-/nunito-sans-5.3.0.tgz
+  Integridade: sha512-CctNhebQ2YYJUwVMCAkHexQg7yedfz9s8JzaETALyc9QIQuDFRlNTWXux9H5PsNLgptPkrzRDomAdLJt1sDFpQ==
+  Projeto: https://github.com/Fonthausen/NunitoSans
+  Licença: SIL Open Font License 1.1 (OFL-NunitoSans.txt)
+
+SHA-256 dos arquivos copiados sem modificação:
+28968d5071c20728aad201dbcadfd1f55cf9336468e0bbc8483d387f2e405eed  dongle-latin-400-normal.woff2
+f814183ad11b4c0f1ceb53b2079c58750f5729a447aa2cc7cf049317853f16f6  dongle-latin-700-normal.woff2
+d9976dd1dc9c0d65046b52810e7cc69cfc229ee9939628ffe637e17efe4ef1ed  nunito-sans-latin-400-normal.woff2
+e03e312b8b7abd8b69ecef4060ded626f80e45723becd13676ad8273cf568a6e  nunito-sans-latin-600-normal.woff2
+cb84238e7b852f2d22b91a598289f13b31cbc7a2d618fd2c0628ecb69459fbeb  nunito-sans-latin-700-normal.woff2
+4c839e56cbef1bbdfd509670f523730e24298aaf9a7791e0151031b023c12e4c  nunito-sans-latin-800-normal.woff2
