@@ -5,6 +5,7 @@ Documentação inicial da arquitetura do CRM e da integração com o Hermes Agen
 ## Documentos
 
 - [Protótipo navegável](../prototype/README.md)
+- [Design system e especificação de UX/UI](./DESIGN.md)
 - [MVP do produto](./product-mvp.md)
 - [Arquitetura do sistema](./architecture.md)
 - [Modelo de segurança e isolamento](./security-model.md)
