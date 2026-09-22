@@ -5,5 +5,11 @@
     "baseUrl": ".",
     "paths": { "@pacaembu/contracts": ["packages/contracts/src/index.ts"] }
   },
-  "include": ["packages/**/*.ts", "tests/**/*.ts", "vitest.config.ts"]
+  "include": [
+    "packages/**/*.ts",
+    "apps/**/*.ts",
+    "db/**/*.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts"
+  ]
 }

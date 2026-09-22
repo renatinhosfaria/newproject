@@ -1,10 +1,10 @@
 import net from "node:net";
 
-const databaseUrl = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL_TEST;
 
 if (!databaseUrl) {
   console.error(
-    "Integration tests require DATABASE_URL; PostgreSQL was not configured.",
+    "Integration tests require DATABASE_URL_TEST; PostgreSQL was not configured.",
   );
   process.exit(1);
 }
@@ -21,6 +21,11 @@ if (!["postgres:", "postgresql:"].includes(parsed.protocol)) {
   console.error(
     "DATABASE_URL must use the postgres:// or postgresql:// scheme.",
   );
+  process.exit(1);
+}
+
+if (!parsed.pathname.endsWith("_test")) {
+  console.error("Integration tests require a database name ending in _test.");
   process.exit(1);
 }
 
