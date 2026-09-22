@@ -436,7 +436,10 @@ components:
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     ServiceUnavailable:
-      description: Hermes indisponível (HERMES_PROFILE_UNAVAILABLE)
+      description: |
+        Hermes indisponível (HERMES_PROFILE_UNAVAILABLE). Reservado para a
+        integração real: neste ciclo o adapter é simulado e a falha é registrada
+        como `error_code` da run e evento SSE, sem resposta HTTP 503.
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
   schemas:
