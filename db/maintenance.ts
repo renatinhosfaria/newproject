@@ -11,9 +11,17 @@ export async function maintenance(
   await pool.query("DELETE FROM idempotency_records WHERE expires_at < $1", [
     now,
   ]);
-  await pool.query("DELETE FROM agent_events WHERE occurred_at < $1", [
-    new Date(now.getTime() - 7 * 86400000),
-  ]);
+  await pool.query(
+    `
+      DELETE FROM agent_events e
+      USING agent_runs r
+      WHERE e.run_id = r.run_id
+        AND r.status IN ('completed', 'failed', 'cancelled')
+        AND r.events_expire_at IS NOT NULL
+        AND r.events_expire_at < $1
+    `,
+    [now],
+  );
 }
 
 export async function main(): Promise<void> {

@@ -21,8 +21,9 @@ const ids = {
 };
 
 export async function seed(db: Db, credentials: DevCredentials): Promise<void> {
-  if ((process.env.NODE_ENV ?? "development") === "production") {
-    throw new Error("development seed is disabled in production");
+  const environment = process.env.NODE_ENV ?? "development";
+  if (environment !== "development" && environment !== "test") {
+    throw new Error("development seed is restricted to development and test");
   }
   if (!credentials.supervisorPassword || !credentials.brokerPassword) {
     throw new Error("seed passwords must be provided through the environment");
