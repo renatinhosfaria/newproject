@@ -35,8 +35,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SessionUser' }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '401': { $ref: '#/components/responses/InvalidCredentials' }
+        '403': { $ref: '#/components/responses/LoginForbidden' }
+        '409': { $ref: '#/components/responses/WorkspaceContextRequired' }
         '422': { $ref: '#/components/responses/ValidationError' }
         '429': { $ref: '#/components/responses/RateLimited' }
   /api/auth/logout:
@@ -47,7 +48,7 @@ paths:
       responses:
         '204': { description: Sessão encerrada }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/CsrfForbidden' }
   /api/auth/me:
     get:
       operationId: getCurrentUser
@@ -77,7 +78,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/LeadPage' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
     post:
       operationId: createLead
@@ -95,7 +96,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Lead' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/BrokerWriteForbidden' }
         '422': { $ref: '#/components/responses/ValidationError' }
   /api/leads/{leadId}:
     parameters: [{ $ref: '#/components/parameters/LeadId' }]
@@ -110,7 +111,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Lead' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
     patch:
       operationId: updateLead
       tags: [Leads]
@@ -127,7 +130,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Lead' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/BrokerWriteForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '422': { $ref: '#/components/responses/ValidationError' }
   /api/conversations:
@@ -146,7 +149,8 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/ConversationPage' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
     post:
       operationId: createConversation
       tags: [Conversations]
@@ -164,8 +168,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Conversation' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '403': { $ref: '#/components/responses/IdempotentWriteForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '422': { $ref: '#/components/responses/ValidationError' }
   /api/conversations/{conversationId}:
     parameters: [{ $ref: '#/components/parameters/ConversationId' }]
@@ -180,7 +185,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/Conversation' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /api/conversations/{conversationId}/messages:
     parameters: [{ $ref: '#/components/parameters/ConversationId' }]
     get:
@@ -197,7 +204,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/MessagePage' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /api/agents:
     get:
       operationId: listAgents
@@ -230,9 +239,10 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AgentSession' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/Conflict' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/AgentWriteForbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
+        '422': { $ref: '#/components/responses/AgentValidationError' }
   /api/agent-sessions/{sessionId}:
     parameters: [{ $ref: '#/components/parameters/SessionId' }]
     get:
@@ -246,7 +256,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AgentSession' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/BrokerReadForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationError' }
   /api/agent-sessions/{sessionId}/messages:
     parameters: [{ $ref: '#/components/parameters/SessionId' }]
     post:
@@ -266,9 +278,9 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/AgentRunAccepted' }
         '401': { $ref: '#/components/responses/Unauthorized' }
-        '403': { $ref: '#/components/responses/Forbidden' }
+        '403': { $ref: '#/components/responses/AgentWriteForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-        '409': { $ref: '#/components/responses/Conflict' }
+        '409': { $ref: '#/components/responses/IdempotencyConflict' }
         '422': { $ref: '#/components/responses/ValidationError' }
         '503': { $ref: '#/components/responses/ServiceUnavailable' }
   /api/agent-sessions/{sessionId}/events:
@@ -296,9 +308,10 @@ paths:
             text/event-stream:
               schema: { type: string }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/AgentStreamForbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '410': { $ref: '#/components/responses/EventReplayUnavailable' }
-        '422': { $ref: '#/components/responses/ValidationError' }
+        '422': { $ref: '#/components/responses/EventStreamValidationError' }
         '503': { $ref: '#/components/responses/ServerShuttingDown' }
 
 components:
@@ -347,27 +360,71 @@ components:
       schema: { type: string, minLength: 16, maxLength: 128 }
   responses:
     Unauthorized:
-      description: Sessão ausente, inválida ou membership suspensa
+      description: Sessão ausente (SESSION_REQUIRED) ou inválida, expirada, revogada ou com usuário, membership, workspace ou corretor inativo (SESSION_INVALID)
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
-    Forbidden:
-      description: Ação fora do escopo permitido (CSRF_ORIGIN_REQUIRED ou CSRF_ORIGIN_INVALID)
+    InvalidCredentials:
+      description: Credenciais inválidas ou usuário inativo (INVALID_CREDENTIALS), com resposta uniforme
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    CsrfForbidden:
+      description: Origin/Referer ausente (CSRF_ORIGIN_REQUIRED) ou diferente da origem do CRM (CSRF_ORIGIN_INVALID)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    LoginForbidden:
+      description: Origin/Referer ausente (CSRF_ORIGIN_REQUIRED) ou inválido (CSRF_ORIGIN_INVALID); usuário sem membership ativa (NO_ACTIVE_MEMBERSHIP); workspace_id informado sem membership ativa do usuário (WORKSPACE_ACCESS_DENIED); membership de corretor sem corretor ativo (BROKER_CONTEXT_REQUIRED)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    BrokerReadForbidden:
+      description: A rota exige contexto de corretor; supervisor ou sessão sem corretor recebe BROKER_CONTEXT_REQUIRED
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    BrokerWriteForbidden:
+      description: Origin/Referer ausente (CSRF_ORIGIN_REQUIRED) ou inválido (CSRF_ORIGIN_INVALID); sessão sem contexto de corretor (BROKER_CONTEXT_REQUIRED)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    IdempotentWriteForbidden:
+      description: Origin/Referer ausente (CSRF_ORIGIN_REQUIRED) ou inválido (CSRF_ORIGIN_INVALID); sessão sem contexto de corretor (BROKER_CONTEXT_REQUIRED); contexto revalidado na transação idempotente e não mais ativo (BROKER_CONTEXT_INVALID, WORKSPACE_SUSPENDED, USER_SUSPENDED, MEMBERSHIP_SUSPENDED, BROKER_SUSPENDED)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    AgentWriteForbidden:
+      description: Origin/Referer ausente (CSRF_ORIGIN_REQUIRED) ou inválido (CSRF_ORIGIN_INVALID); sessão sem contexto de corretor (BROKER_CONTEXT_REQUIRED); Agent inexistente, desabilitado ou não liberado ao corretor (AGENT_UNAVAILABLE); sessão de Agent não ativa, somente no envio de mensagem (AGENT_SESSION_INACTIVE); contexto revalidado na transação idempotente e não mais ativo (BROKER_CONTEXT_INVALID, WORKSPACE_SUSPENDED, USER_SUSPENDED, MEMBERSHIP_SUSPENDED, BROKER_SUSPENDED)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    AgentStreamForbidden:
+      description: Sessão sem contexto de corretor (BROKER_CONTEXT_REQUIRED); Agent desabilitado ou não liberado ao corretor (AGENT_UNAVAILABLE); sessão de Agent não ativa (AGENT_SESSION_INACTIVE)
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     NotFound:
-      description: Recurso não encontrado no escopo autorizado
+      description: Recurso não encontrado no escopo autorizado (RESOURCE_NOT_FOUND); recursos de outra carteira ou workspace também respondem assim
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
-    Conflict:
-      description: Estado incompatível, workspace ambíguo ou idempotência conflitante
+    WorkspaceContextRequired:
+      description: Credenciais válidas com mais de um workspace ativo e sem workspace_id (WORKSPACE_CONTEXT_REQUIRED); o corpo traz options
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    IdempotencyConflict:
+      description: A mesma Idempotency-Key foi usada com outro corpo na mesma operação (IDEMPOTENCY_KEY_REUSED)
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     ValidationError:
-      description: Dados inválidos, inclusive INVALID_EVENT_CURSOR
+      description: Dados, parâmetros de path/query ou headers inválidos, inclusive UUID de path malformado (VALIDATION_ERROR)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    AgentValidationError:
+      description: Dados inválidos (VALIDATION_ERROR) ou lead_id e conversation_id de leads diferentes (AGENT_CONTEXT_MISMATCH)
+      content:
+        application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
+    EventStreamValidationError:
+      description: UUID ou run_id inválido (VALIDATION_ERROR); sem run_id quando a sessão não tem exatamente uma execução ativa (RUN_ID_REQUIRED); Last-Event-ID malformado, de outra execução ou além do último evento (INVALID_EVENT_CURSOR)
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     RateLimited:
-      description: Muitas tentativas
+      description: Muitas tentativas de login por IP e e-mail ou por IP (RATE_LIMITED, retryable), com header Retry-After
+      headers:
+        Retry-After:
+          description: Segundos até a janela de limite reabrir
+          schema: { type: integer, minimum: 1 }
       content:
         application/problem+json: { schema: { $ref: '#/components/schemas/Problem' } }
     EventReplayUnavailable:
@@ -615,3 +672,22 @@ x-error-codes:
   - EVENT_REPLAY_UNAVAILABLE
   - INVALID_EVENT_CURSOR
   - HERMES_PROFILE_UNAVAILABLE
+  - INVALID_CREDENTIALS
+  - SESSION_REQUIRED
+  - SESSION_INVALID
+  - NO_ACTIVE_MEMBERSHIP
+  - WORKSPACE_ACCESS_DENIED
+  - BROKER_CONTEXT_REQUIRED
+  - BROKER_CONTEXT_INVALID
+  - WORKSPACE_SUSPENDED
+  - USER_SUSPENDED
+  - MEMBERSHIP_SUSPENDED
+  - BROKER_SUSPENDED
+  - AGENT_UNAVAILABLE
+  - AGENT_SESSION_INACTIVE
+  - AGENT_CONTEXT_MISMATCH
+  - RESOURCE_NOT_FOUND
+  - VALIDATION_ERROR
+  - RUN_ID_REQUIRED
+  - RATE_LIMITED
+  - SERVER_SHUTTING_DOWN

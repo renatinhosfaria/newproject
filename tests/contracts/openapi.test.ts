@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises";
+import { readdir, readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 import SwaggerParser from "@apidevtools/swagger-parser";
 import { parse } from "yaml";
@@ -52,7 +52,7 @@ describe("OpenAPI contract", () => {
     ).toEqual(["workspace_id", "name"]);
 
     const operations = {
-      "/api/auth/login": { post: ["200", "401", "409", "422", "429"] },
+      "/api/auth/login": { post: ["200", "401", "403", "409", "422", "429"] },
       "/api/auth/logout": { post: ["204", "401", "403"] },
       "/api/auth/me": { get: ["200", "401"] },
       "/api/leads": {
@@ -60,31 +60,31 @@ describe("OpenAPI contract", () => {
         post: ["201", "401", "403", "422"],
       },
       "/api/leads/{leadId}": {
-        get: ["200", "401", "404"],
+        get: ["200", "401", "403", "404", "422"],
         patch: ["200", "401", "403", "404", "422"],
       },
       "/api/conversations": {
-        get: ["200", "401", "403"],
-        post: ["201", "401", "403", "409", "422"],
+        get: ["200", "401", "403", "422"],
+        post: ["201", "401", "403", "404", "409", "422"],
       },
       "/api/conversations/{conversationId}": {
-        get: ["200", "401", "404"],
+        get: ["200", "401", "403", "404", "422"],
       },
       "/api/conversations/{conversationId}/messages": {
-        get: ["200", "401", "404"],
+        get: ["200", "401", "403", "404", "422"],
       },
       "/api/agents": { get: ["200", "401"] },
       "/api/agent-sessions": {
-        post: ["201", "401", "403", "409", "422"],
+        post: ["201", "401", "403", "404", "409", "422"],
       },
       "/api/agent-sessions/{sessionId}": {
-        get: ["200", "401", "404"],
+        get: ["200", "401", "403", "404", "422"],
       },
       "/api/agent-sessions/{sessionId}/messages": {
         post: ["202", "401", "403", "404", "409", "422", "503"],
       },
       "/api/agent-sessions/{sessionId}/events": {
-        get: ["200", "401", "404", "410", "422"],
+        get: ["200", "401", "403", "404", "410", "422", "503"],
       },
     } as const;
 
@@ -98,6 +98,107 @@ describe("OpenAPI contract", () => {
             `${method.toUpperCase()} ${path} ${status}`,
           ).toBeDefined();
         }
+      }
+    }
+
+    // Códigos emitidos pela API real (sondados via harness) por operação e status.
+    const documentedCodes: Array<[string, string, string, string[]]> = [
+      [
+        "/api/auth/login",
+        "post",
+        "403",
+        [
+          "NO_ACTIVE_MEMBERSHIP",
+          "WORKSPACE_ACCESS_DENIED",
+          "BROKER_CONTEXT_REQUIRED",
+          "CSRF_ORIGIN_REQUIRED",
+          "CSRF_ORIGIN_INVALID",
+        ],
+      ],
+      ["/api/auth/login", "post", "401", ["INVALID_CREDENTIALS"]],
+      [
+        "/api/auth/logout",
+        "post",
+        "403",
+        ["CSRF_ORIGIN_REQUIRED", "CSRF_ORIGIN_INVALID"],
+      ],
+      ["/api/auth/me", "get", "401", ["SESSION_REQUIRED", "SESSION_INVALID"]],
+      ["/api/leads/{leadId}", "get", "403", ["BROKER_CONTEXT_REQUIRED"]],
+      ["/api/leads/{leadId}", "get", "422", ["VALIDATION_ERROR"]],
+      [
+        "/api/conversations/{conversationId}",
+        "get",
+        "403",
+        ["BROKER_CONTEXT_REQUIRED"],
+      ],
+      [
+        "/api/conversations/{conversationId}/messages",
+        "get",
+        "403",
+        ["BROKER_CONTEXT_REQUIRED"],
+      ],
+      [
+        "/api/agent-sessions/{sessionId}",
+        "get",
+        "403",
+        ["BROKER_CONTEXT_REQUIRED"],
+      ],
+      [
+        "/api/conversations",
+        "post",
+        "403",
+        [
+          "CSRF_ORIGIN_REQUIRED",
+          "BROKER_CONTEXT_REQUIRED",
+          "BROKER_CONTEXT_INVALID",
+          "WORKSPACE_SUSPENDED",
+          "USER_SUSPENDED",
+          "MEMBERSHIP_SUSPENDED",
+          "BROKER_SUSPENDED",
+        ],
+      ],
+      ["/api/conversations", "post", "404", ["RESOURCE_NOT_FOUND"]],
+      ["/api/conversations", "post", "409", ["IDEMPOTENCY_KEY_REUSED"]],
+      ["/api/agent-sessions", "post", "403", ["AGENT_UNAVAILABLE"]],
+      ["/api/agent-sessions", "post", "422", ["AGENT_CONTEXT_MISMATCH"]],
+      [
+        "/api/agent-sessions/{sessionId}/messages",
+        "post",
+        "403",
+        ["AGENT_UNAVAILABLE", "AGENT_SESSION_INACTIVE"],
+      ],
+      [
+        "/api/agent-sessions/{sessionId}/events",
+        "get",
+        "403",
+        [
+          "BROKER_CONTEXT_REQUIRED",
+          "AGENT_UNAVAILABLE",
+          "AGENT_SESSION_INACTIVE",
+        ],
+      ],
+      [
+        "/api/agent-sessions/{sessionId}/events",
+        "get",
+        "422",
+        ["VALIDATION_ERROR", "RUN_ID_REQUIRED", "INVALID_EVENT_CURSOR"],
+      ],
+      [
+        "/api/agent-sessions/{sessionId}/events",
+        "get",
+        "503",
+        ["SERVER_SHUTTING_DOWN"],
+      ],
+    ];
+    for (const [path, method, status, codes] of documentedCodes) {
+      const description = String(
+        api.paths[path][method].responses[status]?.description ?? "",
+      );
+      for (const code of codes) {
+        expect(
+          description,
+          `${method.toUpperCase()} ${path} ${status} ${code}`,
+        ).toContain(code);
       }
     }
 
@@ -187,6 +288,46 @@ describe("OpenAPI contract", () => {
       "HERMES_PROFILE_UNAVAILABLE",
     ]) {
       expect(raw).toContain(code);
+    }
+  });
+
+  it("documenta todo código HTTP emitido por problem() na API", async () => {
+    const raw = await readFile(openapiPath, "utf8");
+    const api = parse(raw) as any;
+    const responseText = Object.values(
+      api.components.responses as Record<string, { description: string }>,
+    )
+      .map((response) => response.description)
+      .join("\n");
+    const sourceRoot = new URL("../../apps/api/src/", import.meta.url);
+    const files = (await readdir(sourceRoot, { recursive: true })).filter(
+      (file) => file.endsWith(".ts"),
+    );
+    const emitted = new Set<string>();
+    for (const file of files) {
+      const source = await readFile(new URL(file, sourceRoot), "utf8");
+      for (const match of source.matchAll(/problem\(\s*\d{3},\s*"([A-Z_]+)"/g))
+        emitted.add(match[1]);
+    }
+    // Não chegam como resposta HTTP das 13 rotas: health fica fora do
+    // contrato e os demais só viram error_code/evento de uma run.
+    const outsideHttpContract = new Set([
+      "NOT_READY",
+      "RUN_NOT_FOUND",
+      "RUN_CANCELLED",
+      "INVALID_AGENT_OUTPUT",
+      "INCOMPLETE_AGENT_OUTPUT",
+      "AGENT_CAPABILITY_DENIED",
+    ]);
+    expect(emitted.size).toBeGreaterThan(20);
+    const missing = [...emitted]
+      .filter((code) => !outsideHttpContract.has(code))
+      .filter((code) => !responseText.includes(code))
+      .sort();
+    expect(missing).toEqual([]);
+    for (const code of emitted) {
+      if (!outsideHttpContract.has(code))
+        expect(api["x-error-codes"], code).toContain(code);
     }
   });
 });
