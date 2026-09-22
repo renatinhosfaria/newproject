@@ -14,7 +14,7 @@ Data: 22/09/2026. Branch integrada: `feat/preparatory-crm-cycle`, com correção
 | `pnpm test:e2e` | 43 passaram e 1 foi pulado por escopo da tela; desktop 1280px e mobile 390px. |
 | `pnpm test:e2e:compose` | 1/1 passou em 3,8 minutos. Construiu as imagens, subiu o Compose, autenticou pelo Nginx, verificou `/api/health/ready`, criou e leu um lead após reiniciar a API e recebeu `agent.run.completed` por SSE via proxy. O projeto e o volume exclusivos foram removidos pelo teste. |
 | `docker compose --env-file <arquivo temporário> -f infra/compose/compose.yaml config --quiet` | Passou com variáveis sintéticas; o arquivo temporário foi removido. |
-| `git diff --check` | Passou; revisão independente anterior do conjunto não encontrou problemas críticos ou importantes. |
+| `git diff --check` | Passou. A revisão independente do conjunto registrada em `f82cd74` é **anterior** à correção `9ecf9cf` da tarefa 8 e não encontrou problemas críticos ou importantes naquele estado. A revisão final do conjunto, posterior a `9ecf9cf`, `92297fc` e `b10d921`, está em `.superpowers/sdd/2026-09-22-crm-vertical-slice/final-review.md` e apontou as pendências tratadas na seção seguinte. |
 
 Foram inspecionadas capturas das telas de carteira, Agent e supervisor em 1280px e de menu, conversa e Agent em 390px. As ações e o estado “Rascunho não enviado” ficaram visíveis; o menu móvel mostrou a identidade do corretor e o conteúdo permaneceu legível sem corte horizontal nas capturas. Os testes Playwright também cobriram teclado, validações associadas aos campos, reconexão SSE, cursor expirado, revogação, CSRF, envio duplicado e persistência após recarregar.
 
@@ -25,3 +25,13 @@ O daemon temporário respondeu pelo socket exclusivo e o smoke validou o empacot
 O comando `playwright install --with-deps chromium` atualizou quatro pacotes `libglib2.0` do host via apt; o `needrestart` reiniciou serviços de sistema associados. O comando terminou com exit 0. O daemon temporário foi encerrado e suas regras Docker de rede foram removidas após a validação.
 
 Não foi feito reset manual do banco. Os testes usam schemas efêmeros no banco terminado em `_test` e seus harnesses os removem ao concluir. A inspeção de `apps/api/src/agents` encontrou apenas o adapter determinístico e a porta Hermes, sem chamadas HTTP externas, modelo ou envio de WhatsApp neste ciclo.
+
+## Rodada de correção da revisão final
+
+A revisão final (`final-review.md`) não aceitou o plano como completo e apontou três pendências Important (I-1 a I-3) e ajustes Minor (M-1 e M-2), todas corrigidas nesta rodada. O relatório está em `.superpowers/sdd/2026-09-22-crm-vertical-slice/final-fix-report.md`.
+
+**Falha intermitente (I-1).** A primeira rodada do controller em `b10d921` terminou com `1 failed | 117 passed` e não teve o log registrado. A causa foi isolada no teste "stream não mantém transação aberta e lookup worker revela somente routing" de `tests/integration/agents.test.ts`. Ele consultava `pg_stat_activity` filtrando apenas `usename='pacaembu_app'` e `state='idle in transaction'`, e por isso enxergava conexões de todos os harnesses e processos no mesmo banco. Uma transação momentaneamente ociosa de outro arquivo, ou de outra execução simultânea, fazia a asserção falhar com `expected 1 to be +0`. Era defeito do teste, não do produto. Antes da correção, duas execuções simultâneas de `pnpm test:integration` reproduziram a falha em uma delas.
+
+Na correção, cada harness define `application_name` igual ao nome do seu schema exclusivo em todas as conexões (`pool`, `ownerPool` e a API do harness). A consulta passou a filtrar também por esse nome. A asserção não foi afrouxada: continua exigindo zero conexões próprias em `idle in transaction`, e uma nova asserção exige que o filtro encontre as conexões do próprio harness, o que impede um filtro vazio. Depois da correção, três rodadas de duas execuções simultâneas de `pnpm test:integration` passaram, com 87/87 em cada execução.
+
+**Outras correções.** O OpenAPI passou a documentar todos os status e códigos HTTP emitidos pela API (I-2). O README passou a definir todas as variáveis de ambiente e a orientar a instalação de browsers sem `--with-deps` fora do CI ou de containers descartáveis (I-3 e M-1).
