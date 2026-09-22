@@ -5,7 +5,7 @@ RETURNS TABLE(id uuid, status broker_status)
 LANGUAGE sql
 STABLE
 SECURITY DEFINER
-SET search_path = public
+SET search_path = public, pg_temp
 AS $$
   SELECT b.id, b.status
   FROM brokers b
@@ -14,6 +14,7 @@ $$;
 
 DO $$ BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'pacaembu_app') THEN
+    EXECUTE 'REVOKE ALL ON FUNCTION auth_broker_for_user(uuid, uuid) FROM PUBLIC';
     EXECUTE 'GRANT EXECUTE ON FUNCTION auth_broker_for_user(uuid, uuid) TO pacaembu_app';
   END IF;
 END $$;

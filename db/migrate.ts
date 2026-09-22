@@ -23,6 +23,7 @@ export async function migrate(pool: pg.Pool): Promise<void> {
     "0004_reliability.sql",
     "0005_agent_session_hardening.sql",
     "0006_auth_broker_lookup.sql",
+    "0007_harden_auth_lookup.sql",
   ];
   for (const file of files) {
     const version = file.slice(0, 4);
